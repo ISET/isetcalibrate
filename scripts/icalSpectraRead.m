@@ -22,36 +22,40 @@ spd  = dSpectra.linearity_spectra(:,1:lastWave)';
 %% Notice that the black condition has a little bump of light around 850nm
 
 vcNewGraphWin;
-plot(wave, spd(:,1))
+idx = logical( ((rgb(:,2) == 0) .* (rgb(:,3) == 0)) .* (rgb(:,1) == 0));
+blackSpectra = mean(spd(:,idx),2);
+plot(wave, blackSpectra)
 title('Black level'); grid on
 
 %%  Test display spectra homogeneity
 
-idx = logical((rgb(:,2) == 0) .* (rgb(:,3) == 0));
+idx = logical( ((rgb(:,2) == 0) .* (rgb(:,3) == 0)) .* (rgb(:,1) > 0));
 redSpectra = spd(:,idx);
-redSpectra = redSpectra - spd(:,1);
+redSpectra = redSpectra - blackSpectra;
 vcNewGraphWin;
-semilogy(wave, redSpectra)
+plot(wave, redSpectra)
 title('Red spectra (minus black)'); grid on
 
 %% Green
-idx = logical((rgb(:,1) == 0) .* (rgb(:,3) == 0));
+idx = logical( ((rgb(:,1) == 0) .* (rgb(:,3) == 0)) .* (rgb(:,2) > 0));
 greenSpectra = spd(:,idx);
-greenSpectra = greenSpectra - spd(:,1);
+greenSpectra = greenSpectra - blackSpectra;
 vcNewGraphWin;
 plot(wave, greenSpectra)
 title('Green spectra (minus black)'); grid on
 
 %% Blue
-idx = logical((rgb(:,1) == 0) .* (rgb(:,2) == 0));
+idx = logical( ((rgb(:,1) == 0) .* (rgb(:,2) == 0)) .* (rgb(:,3) > 0));
 blueSpectra = spd(:,idx);
-blueSpectra = blueSpectra - spd(:,1);
+blueSpectra = blueSpectra - blackSpectra;
 vcNewGraphWin;
 plot(wave, blueSpectra)
 title('Blue spectra (minus black)'); grid on
 
 %% Test spectral additivity of the phosphors
 
+% We used to call this phosphor independence some 30 years ago.  Brainard
+% paper.
 idx = logical(((rgb(:,1) == 1) .* (rgb(:,2) == 1)) .* (rgb(:,3) == 1));
 whiteSpectra = spd(:,idx) - spd(:,1);
 vcNewGraphWin;
@@ -62,5 +66,14 @@ title('Test spectral additivity'); grid on
 %% Solve for the scalar relationship between the spectra
 %  Find a the scalar such that 
 
-redWeights = mean(diag(1./redSpectra(:,end)) * redSpectra);
+% Here is the display gamma
+redWeights = mean(diag(1./redSpectra(:,end)) * redSpectra)';
+dv = unique(rgb(:,1));
 
+% The 0 value is omitted from the output, but it is in the dv.  So we add
+% it manually here.
+plot(dv,[0;redWeights],'r-o'); grid on;
+xlabel('Digital value')
+ylabel('Relative intensity')
+
+%%
