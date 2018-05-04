@@ -11,7 +11,7 @@ dSpectra = load('linearity_spectra.mat');
 %
 
 wave = dSpectra.wavelength;
-rgb  = dSpectra.values;
+levels  = dSpectra.values;
 
 % Pull out the spectra, but only up to 800 nm.  Last is 1068
 lastWave = find(wave == 800);
@@ -22,14 +22,14 @@ spd  = dSpectra.linearity_spectra(:,1:lastWave)';
 %% Notice that the black condition has a little bump of light around 850nm
 
 vcNewGraphWin;
-idx = logical( ((rgb(:,2) == 0) .* (rgb(:,3) == 0)) .* (rgb(:,1) == 0));
+idx = logical( ((levels(:,2) == 0) .* (levels(:,3) == 0)) .* (levels(:,1) == 0));
 blackSpectra = mean(spd(:,idx),2);
 plot(wave, blackSpectra)
 title('Black level'); grid on
 
 %%  Test display spectra homogeneity
 
-idx = logical( ((rgb(:,2) == 0) .* (rgb(:,3) == 0)) .* (rgb(:,1) > 0));
+idx = logical( ((levels(:,2) == 0) .* (levels(:,3) == 0)) .* (levels(:,1) > 0));
 redSpectra = spd(:,idx);
 redSpectra = redSpectra - blackSpectra;
 vcNewGraphWin;
@@ -37,7 +37,7 @@ plot(wave, redSpectra)
 title('Red spectra (minus black)'); grid on
 
 %% Green
-idx = logical( ((rgb(:,1) == 0) .* (rgb(:,3) == 0)) .* (rgb(:,2) > 0));
+idx = logical( ((levels(:,1) == 0) .* (levels(:,3) == 0)) .* (levels(:,2) > 0));
 greenSpectra = spd(:,idx);
 greenSpectra = greenSpectra - blackSpectra;
 vcNewGraphWin;
@@ -45,7 +45,7 @@ plot(wave, greenSpectra)
 title('Green spectra (minus black)'); grid on
 
 %% Blue
-idx = logical( ((rgb(:,1) == 0) .* (rgb(:,2) == 0)) .* (rgb(:,3) > 0));
+idx = logical( ((levels(:,1) == 0) .* (levels(:,2) == 0)) .* (levels(:,3) > 0));
 blueSpectra = spd(:,idx);
 blueSpectra = blueSpectra - blackSpectra;
 vcNewGraphWin;
@@ -56,7 +56,7 @@ title('Blue spectra (minus black)'); grid on
 
 % We used to call this phosphor independence some 30 years ago.  Brainard
 % paper.
-idx = logical(((rgb(:,1) == 1) .* (rgb(:,2) == 1)) .* (rgb(:,3) == 1));
+idx = logical(((levels(:,1) == 1) .* (levels(:,2) == 1)) .* (levels(:,3) == 1));
 whiteSpectra = spd(:,idx) - spd(:,1);
 vcNewGraphWin;
 plot(wave, blueSpectra(:,end) + greenSpectra(:,end) + redSpectra(:,end),'--',...
@@ -68,7 +68,7 @@ title('Test spectral additivity'); grid on
 
 % Here is the display gamma
 redWeights = mean(diag(1./redSpectra(:,end)) * redSpectra)';
-dv = unique(rgb(:,1));
+dv = unique(levels(:,1));
 
 % The 0 value is omitted from the output, but it is in the dv.  So we add
 % it manually here.
