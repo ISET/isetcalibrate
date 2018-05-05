@@ -57,7 +57,7 @@ title('Blue spectra (minus black)'); grid on
 % We used to call this phosphor independence some 30 years ago.  Brainard
 % paper.
 idx = logical(((levels(:,1) == 1) .* (levels(:,2) == 1)) .* (levels(:,3) == 1));
-whiteSpectra = spd(:,idx) - spd(:,1);
+whiteSpectra = spd(:,idx) - blackSpectra;
 vcNewGraphWin;
 plot(wave, blueSpectra(:,end) + greenSpectra(:,end) + redSpectra(:,end),'--',...
     wave,whiteSpectra);
@@ -77,3 +77,24 @@ xlabel('Digital value')
 ylabel('Relative intensity')
 
 %%
+% Here is the display gamma
+greenWeights = mean(diag(1./greenSpectra(:,end)) * greenSpectra)';
+dv = unique(levels(:,1));
+
+% The 0 value is omitted from the output, but it is in the dv.  So we add
+% it manually here.
+plot(dv,[0;greenWeights],'r-o'); grid on;
+xlabel('Digital value')
+ylabel('Relative intensity')
+
+%%
+% Here is the display gamma
+blueWeights = mean(diag(1./blueSpectra(:,end)) * blueSpectra)';
+dv = unique(levels(:,1));
+
+% The 0 value is omitted from the output, but it is in the dv.  So we add
+% it manually here.
+plot(dv,[0;blueWeights],'r-o'); grid on;
+xlabel('Digital value')
+ylabel('Relative intensity')
+
