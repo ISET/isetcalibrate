@@ -28,8 +28,9 @@ T = array2table([displayRGB, sensorRGB]);
 T.Properties.VariableNames = {'dR','dG','dB','sR','sG','sB'};
 
 T.spd = dSpectra.linearity_spectra(:,1:idxMaxWave);
-
-head(T)
+ 
+% To see the top few lines of the table, do this
+% head(T)
 
 %% Notice that the black condition has a little bump of light around 850nm
 
@@ -82,7 +83,8 @@ blueSPD = blueSPD - blackSPD;
 blueLevels = T{T.dR == 0 & T.dG == 0 & T.dB > 0,'dB'};
 blueWeights = mean( blueSPD * diag(1./blueMax),2);
 
-%%
+%%  Calculate the gamma curves
+
 dv = unique(redLevels(:,1));
 dv = [0;dv];
 redWeights = [0;redWeights];
@@ -94,4 +96,20 @@ plot(dv,redWeights,'r-o',...
     dv,blueWeights,'b-o'); grid on;
 xlabel('Digital value')
 ylabel('Relative intensity')
+
+%% Predict the sensor RGB from the spectra
+%
+% There should be a sensor matrix, S, that maps the spectra into the
+% sensor RGB values
+
+sensorRGB = [T.sR, T.sG, T.sB];
+spd       = T.spd;
+
+% I like the data in column format
+sensorRGB = sensorRGB'; spd = spd';
+
+% Find an S such that sensorRGB = S*spd;
+S = sensorRGB*pinv(spd);
+
+
 

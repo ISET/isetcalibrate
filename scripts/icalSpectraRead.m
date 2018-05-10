@@ -1,4 +1,7 @@
 %% Inspecting spectra
+%
+% Deprecated.  See icalTable
+%
 
 chdir(fullfile(icalRootPath,'local'));
 dSpectra = load('linearity_spectra.mat');

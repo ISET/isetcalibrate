@@ -1,5 +1,6 @@
 %% icalRGBRead
 %
+% Deprecated.  See icalTable
 %
 
 %%
