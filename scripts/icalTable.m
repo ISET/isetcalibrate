@@ -16,7 +16,7 @@ displayRGB = dRGB.values;
 
 dSpectra = load('linearity_spectra.mat');
 wave = dSpectra.wavelength;
-idxMaxWave = find(wave == 840);
+idxMaxWave = find(wave == 800);
 wave = wave(1:idxMaxWave);
 
 %% Make a table
@@ -35,7 +35,7 @@ T.spd = dSpectra.linearity_spectra(:,1:idxMaxWave);
 %% Notice that the black condition has a little bump of light around 850nm
 
 vcNewGraphWin;
-blackSpectra = T{T.dR==0 & T.dG == 0 & T.dB == 0,'spd'};
+blackSpectra = T{T.dR == 0 & T.dG == 0 & T.dB == 0,'spd'};
 blackSPD = mean(blackSpectra);
 plot(wave,blackSPD)
 title('Black level'); grid on
@@ -97,19 +97,70 @@ plot(dv,redWeights,'r-o',...
 xlabel('Digital value')
 ylabel('Relative intensity')
 
-%% Predict the sensor RGB from the spectra
+%% Predict the sensor RGB from the spectra using ridge regression
+
+% We get the sensor RGB values, and we assume that they should be 0 when
+% the display RGB is 0.  So we find the black response and subtract that
+% from the measured sensorRGB
+sensorRGB = [T.sR, T.sG, T.sB]';
+blackRGB(1)  = mean(T{T.dR == 0 & T.dG == 0 & T.dB == 0,'sR'});
+blackRGB(2)  = mean(T{T.dR == 0 & T.dG == 0 & T.dB == 0,'sG'});
+blackRGB(3)  = mean(T{T.dR == 0 & T.dG == 0 & T.dB == 0,'sB'});
+sensorRGB = sensorRGB - blackRGB';
+
+spd       = T.spd';
+
+% There should be a sensor matrix that maps the spectra into the sensor RGB
+% values
 %
-% There should be a sensor matrix, S, that maps the spectra into the
-% sensor RGB values
-
-sensorRGB = [T.sR, T.sG, T.sB];
-spd       = T.spd;
-
-% I like the data in column format
-sensorRGB = sensorRGB'; spd = spd';
-
 % Find an S such that sensorRGB = S*spd;
-S = sensorRGB*pinv(spd);
+% S = sensorRGB*pinv(spd);
+% But because of noise we use ridge regression
+
+% y = X*b
+k = 0.07;
+sensor = zeros(length(wave),3);
+for ii = 1:3
+    % ridge(y,X,k)
+    % foo = (spd*spd' + k*eye(size(spd,1)))*spd*sensorRGB(ii,:)';
+    y = sensorRGB(ii,:)';
+    X = spd';
+    sensor(:,ii) = ridge(y,X,k,1);
+    % sensor(:,ii) = inv(X'*X + k*eye(size(X,2)))*X'*y;
+end
+
+%%
+obs  = sensorRGB';
+pred = spd'*sensor;
+
+% Find the scale factor to deal with the ridge regression screwing up the
+% scale because of 'k' value
+%    obs = pred*s
+%    pred'*obs = pred'*pred*s
+%    inv(pred'*pred)*(pred'*obs) = scaleFactor
+%
+scaleFactor = (pred(:)'*pred(:))\(pred(:)'*obs(:));
+pred = pred*scaleFactor;
+
+vcNewGraphWin;
+plot(wave,sensor)
+title(sprintf('RMSE(k=%.3f) %.3g',k,sqrt(mean((pred(:) - obs(:)).^2))))
+xlabel('Wavelength (nm)');
+ylabel('Responsivity');
+grid on
+
+%%
+vcNewGraphWin;
+plot(obs(:,1),pred(:,1),'ro', ...
+    obs(:,2),pred(:,2),'go',...
+    obs(:,3),pred(:,3),'bo','markersize',10);
+grid on; identityLine; axis equal
+xlabel('Observed RGB');
+ylabel('Predicted RGB');
+title(sprintf('RMSE(k=%.3f) %.3g',k,sqrt(mean((pred(:) - obs(:)).^2))))
+
+%%
 
 
+%%
 
