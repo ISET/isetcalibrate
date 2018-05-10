@@ -125,13 +125,19 @@ for ii = 1:3
     % foo = (spd*spd' + k*eye(size(spd,1)))*spd*sensorRGB(ii,:)';
     y = sensorRGB(ii,:)';
     X = spd';
-    sensor(:,ii) = ridge(y,X,k,1);
-    % sensor(:,ii) = inv(X'*X + k*eye(size(X,2)))*X'*y;
+    
+    % This solves so that y = X*b, where
+    % y is 40 x 1, X is 40 x nWave, and b is nWave x 1
+    b = ridge(y,X,k);
+    sensor(:,ii) = b;  % The first term is a constant offset
+    % vcNewGraphWin; plot(y(:),X*b,'o'); identityLine;
+    
+    % tmp = inv(X'*X + k*eye(size(X,2)))*X'*y; % plot(wave,tmp)
 end
 
 %%
 obs  = sensorRGB';
-pred = spd'*sensor;
+pred = spd'*sensor;  % X*sensor
 
 % Find the scale factor to deal with the ridge regression screwing up the
 % scale because of 'k' value
