@@ -27,7 +27,7 @@ wavelength = dSpectra.wavelength;
 T = array2table([displayRGB, sensorRGB]);
 T.Properties.VariableNames = {'dR','dG','dB','sR','sG','sB'};
 
-wave = 400:20:700;
+wave = 400:20:800;
 
 spd = zeros(size(dSpectra.linearity_spectra,1),numel(wave));
 for ii=1:size(dSpectra.linearity_spectra,1)
