@@ -15,9 +15,9 @@ sensorRGB = dRGB.RGB_mean_values;
 displayRGB = dRGB.values;
 
 dSpectra = load('linearity_spectra.mat');
-wave = dSpectra.wavelength;
-idxMaxWave = find(wave == 800);
-wave = wave(1:idxMaxWave);
+wavelength = dSpectra.wavelength;
+% idxMaxWave = find(wave == 800);
+% wave = wave(1:idxMaxWave);
 
 %% Make a table
 
@@ -27,12 +27,18 @@ wave = wave(1:idxMaxWave);
 T = array2table([displayRGB, sensorRGB]);
 T.Properties.VariableNames = {'dR','dG','dB','sR','sG','sB'};
 
-T.spd = dSpectra.linearity_spectra(:,1:idxMaxWave);
- 
+wave = 400:20:700;
+
+spd = zeros(size(dSpectra.linearity_spectra,1),numel(wave));
+for ii=1:size(dSpectra.linearity_spectra,1)
+    spd(ii,:) = interp1(wavelength,dSpectra.linearity_spectra(ii,:),wave);
+end
+T.spd = spd;
+
 % To see the top few lines of the table, do this
 % head(T)
 
-%% Notice that the black condition has a little bump of light around 850nm
+%% Notice that the black condition includes light at 850nm (and elsewhere)
 
 vcNewGraphWin;
 blackSpectra = T{T.dR == 0 & T.dG == 0 & T.dB == 0,'spd'};
@@ -118,8 +124,10 @@ spd       = T.spd';
 % But because of noise we use ridge regression
 
 % y = X*b
-k = 0.07;
+k = 1e-1;
 sensor = zeros(length(wave),3);
+offset = zeros(1,3);
+X = spd';
 for ii = 1:3
     % ridge(y,X,k)
     % foo = (spd*spd' + k*eye(size(spd,1)))*spd*sensorRGB(ii,:)';
@@ -128,16 +136,65 @@ for ii = 1:3
     
     % This solves so that y = X*b, where
     % y is 40 x 1, X is 40 x nWave, and b is nWave x 1
-    b = ridge(y,X,k);
-    sensor(:,ii) = b;  % The first term is a constant offset
+    % The predictions are not perfect, but the sensors look a lot like the
+    % true sensors.  Why?
+    
+    b = ridge(y,X,k,1);
+    sensor(:,ii) = b;
+    
+    %{
+    b = lsqnonneg(X,y);
+    sensor(:,ii) = b;
+    %}
+    % This produces perfect predictions.  Puzzling.  The sensors are not at
+    % all like the real sensors.
+    %{
+     b0 = ridge(y,X,k,0);
+     % yHat = X*b(2:end) + b(1);
+     % vcNewGraphWin; plot(yHat(:),y(:),'o');
+     sensor(:,ii) = b0(2:end);  % The first term is a constant offset
+     offset(ii)   = b0(1);
+    %}
+    
+    % This produces something unlike the ridge regression, although it is
+    % supposed to produce the same.  Maybe if I normalized X or something?
+    % b = pinv(X'* X + k*eye(size(X,2))) * X'* y;  % plot(wave,b)
+
+    % For the case of flag = 1;
+    % Ypred = mean(y) + ((Xpred-m)./s')*B1
+    
+    % From regression to ridge regression
+    % y = Xb
+    % X'y = (X' X)b
+    % (X' X + kI ) ^-1 y = b
+
+    % k = 1e-1
+    % b = pinv(X'* X + k*eye(size(X,2))) * X'* y;  % plot(wave,b)
+    
+
+    % From the doc ridge notes
+    % m = mean(X); s = std(X,0,1)';
+    % b_scaled = b ./ s;
+    % b0 = [mean(y) - m*b_scaled; b_scaled];
+    % vcNewGraphWin; plot(b0(2:end),b1(:),'o')
     % vcNewGraphWin; plot(y(:),X*b,'o'); identityLine;
     
     % tmp = inv(X'*X + k*eye(size(X,2)))*X'*y; % plot(wave,tmp)
+    % Find b that solves y = X*b subject to the ridge reg constraint
+    
+    %{
+    foo = ridge(y,X,k);  % plot(wave,foo)
+    tmp = inv(((X'* X) + k*eye(size(X,2)))) * X' * y; % plot(wave,tmp)
+    vcNewGraphWin; plot(foo(:),tmp(:),'o')
+    %}
+    
+    % tmp = ((X'* X) + k*eye(size(X,2))) \ ( X' * y);
 end
 
-%%
+%% Calculate the predicted sensor value, which is a scale factor different
+% from the 
 obs  = sensorRGB';
-pred = spd'*sensor;  % X*sensor
+pred = spd'*sensor + offset;  % X*sensor + offset
 
 % Find the scale factor to deal with the ridge regression screwing up the
 % scale because of 'k' value
@@ -148,12 +205,14 @@ pred = spd'*sensor;  % X*sensor
 scaleFactor = (pred(:)'*pred(:))\(pred(:)'*obs(:));
 pred = pred*scaleFactor;
 
+%%
 vcNewGraphWin;
-plot(wave,sensor)
+plot(wave,sensor/max(sensor(:)))
 title(sprintf('RMSE(k=%.3f) %.3g',k,sqrt(mean((pred(:) - obs(:)).^2))))
 xlabel('Wavelength (nm)');
 ylabel('Responsivity');
 grid on
+set(gca,'ylim',[-0.3 1.1]);
 
 %%
 vcNewGraphWin;
@@ -164,9 +223,6 @@ grid on; identityLine; axis equal
 xlabel('Observed RGB');
 ylabel('Predicted RGB');
 title(sprintf('RMSE(k=%.3f) %.3g',k,sqrt(mean((pred(:) - obs(:)).^2))))
-
-%%
-
 
 %%
 
