@@ -133,7 +133,6 @@ for ii = 1:3
     % foo = (spd*spd' + k*eye(size(spd,1)))*spd*sensorRGB(ii,:)';
     y = sensorRGB(ii,:)';
     X = spd';
-    
     % This solves so that y = X*b, where
     % y is 40 x 1, X is 40 x nWave, and b is nWave x 1
     % The predictions are not perfect, but the sensors look a lot like the
