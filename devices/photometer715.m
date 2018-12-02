@@ -30,8 +30,8 @@ plot(wav,spd);
 
 %save(sprintf('spectr%d.mat',80),'spd');
 %cd('pink_jedeye_tungsten_spectra') 
-result(1,:) = wav;
-result(2,:) = spd;
+result(:,1) = wav;
+result(:,2) = spd;
 filename= sprintf('test.mat',ii);
 save(filename,'result');
 fprintf('Done!\n');
