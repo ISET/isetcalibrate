@@ -32,8 +32,8 @@ end
 figure();
 hold on
 plot(wav,spd);hold on
-result(1,:) = wav;
-result(2,:) = spd;
+result(:,1) = wav;
+result(:,2) = spd;
 %save(sprintf('spectr%d.mat',80),'spd');
 %cd('pink_jedeye_tungsten_spectra') 
 % filename= sprintf('007_tongue_blue_flashlight_%d.mat',ii);
