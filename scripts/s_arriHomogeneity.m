@@ -120,7 +120,8 @@ end
 % Figure out how to plot the color order correctly.
 ieNewGraphWin;
 plot(code,arriMean,'o');
-xlabel('Intensity level'); ylabel('Channel mean');
+set(gca,'xlim',[0 10]);
+xlabel('Code level'); ylabel('Channel mean');
 grid on; 
 
 %{
