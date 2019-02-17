@@ -1,8 +1,8 @@
-function [ R,G,B,ariRGB,ariRaw  ] = arriRead( fileName )
+function [ariRGB, ariRaw] = arriRead( fileName )
 % Read an ARRIScope file (.ari) and convert into various RGB and RAW formats
 % 
 % Syntax:
-%   RGB = arriRead(FILENAME) 
+%   [ariRGB, ariRaw] = arriRead(FILENAME) 
 %
 % Inputs
 %  FILENAME - string
@@ -11,11 +11,9 @@ function [ R,G,B,ariRGB,ariRaw  ] = arriRead( fileName )
 %  None yet
 %
 % Outputs
-%   R
-%   G
-%   B
-%   ariRGB
-%   ariRaw
+%   ariRGB  - Combined RGB data into a single variable
+%   ariRaw  - Output from imReadASAri, which reads the .ari file and packs
+%             the 12 bit data in that file into 16 bit values
 %
 % Based on importASAri.m from ARRI folks
 %    Julian Klabes - 04/21/2017
@@ -25,7 +23,7 @@ function [ R,G,B,ariRGB,ariRaw  ] = arriRead( fileName )
 
 %% Check the file exists
 p = inputParser;
-p.addRequired(fileName,@(x)(exist(x,'file')));
+p.addRequired('fileName',@(x)(exist(x,'file')));
 p.parse(fileName);
 
 % Check that the file is an arriscope file
