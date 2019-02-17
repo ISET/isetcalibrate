@@ -21,7 +21,7 @@ chdir(fullfile(icalRootPath,'local'));
 
 %% Get data from an acquisition for one of the channels
 
-channel = 'Green';   % 'Red','Green','Blue','Violet','White', 'Infrared'
+channel = 'Infrared';   % 'Red','Green','Blue','Violet','White', 'Infrared'
 str     = sprintf('label=%s',channel);
 Acquisition = thisSession.acquisitions.findOne(str);
 
@@ -33,7 +33,7 @@ spdZip = sprintf('%s_spd.zip',channel);
 spdFile.download(spdZip);
 spdDir = sprintf('%s_spd',channel);
 unzip(spdZip,spdDir);
-
+disp('Downloaded and unzipped spd data');
 
 %{
 % Programming note
@@ -54,6 +54,7 @@ arriZip = sprintf('%s_arri.zip',channel);
 arriFile.download(arriZip)
 arriDir = sprintf('%s_arri',channel);
 unzip(arriZip,arriDir);
+disp('Downloaded and unzipped ari data');
 
 %% Read the spectra, figure out the code and intensity levels
 
@@ -136,6 +137,8 @@ set(gca,'xlim',[0 10]);
 xlabel('Code level'); ylabel('Channel mean');
 grid on; legend({'R','G','B'});
 
+%%
+chdir(fullfile(icalRootPath,'local'));
 
 
 %%

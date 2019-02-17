@@ -23,10 +23,10 @@ axis image
 %% Split the RGB into two parts
 [rows,cols,~] = size(RGB);
 left = RGB(:,1:cols/2,:);
-sCol = (cols/2 - 1080)/2
-sRow = (rows/2 
+sCol = (cols/2 - 1080)/2;
+sRow = (rows - 1920)/2;
 ieNewGraphWin; 
-imagesc(left(84:end,:,3)); colormap(gray); axis image
+imagesc(left(sRow:end,:,3)); colormap(gray); axis image
 
 % left = left(1:1920,1:1080,:);
 %%
