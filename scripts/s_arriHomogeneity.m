@@ -91,6 +91,7 @@ if U(idx,1) < 0, pc1 = -1*U(:,1);
 else, pc1 = U(:,1);
 end
 plot(wave,pc1)
+title(sprintf('Channel %s\n',channel));
 
 %% Compute Levels 
 
@@ -103,7 +104,7 @@ levels = levels/max(levels(:));
 ieNewGraphWin;
 plot(code/max(code),levels,'o')
 grid on; xlabel('Scaled file code'); ylabel('SPD level');
-set(gca,'ylim',[0 1.1]); legend({'R','G','B'});
+set(gca,'ylim',[0 1.1]); 
 identityLine;
 
 %% Find the mean values in the region of the ARRI images
@@ -116,6 +117,7 @@ arriMean = zeros(3,nFiles);
 code = zeros(1,nFiles);
 
 % Seemed like a good spatial region of the raw image to use
+% [~,rect] = imcrop(arriRGB);
 rect = [431 375 127 127]; 
 
 for ii=1:nFiles
@@ -134,8 +136,6 @@ set(gca,'xlim',[0 10]);
 xlabel('Code level'); ylabel('Channel mean');
 grid on; legend({'R','G','B'});
 
-%{
-  [~,rect] = imcrop(rgb);
-%}
+
 
 %%
