@@ -21,9 +21,10 @@ chdir(fullfile(icalRootPath,'local'));
 
 %% Get data from an acquisition for one of the channels
 
-channel = 'Infrared';   % 'Red','Green','Blue','Violet','White', 'Infrared'
+channel = 'Violet';   % 'Red','Green','Blue','Violet','White', 'Infrared'
 str     = sprintf('label=%s',channel);
 Acquisition = thisSession.acquisitions.findOne(str);
+
 
 %%  Down load the spectra.  Not very big.
 
