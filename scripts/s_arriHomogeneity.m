@@ -1,12 +1,33 @@
-%% Download and estimate homogeneity (linearity with respect to intensity)
-%
-% The SPD files contain the measured light spectra
-% The ARRI files contain the raw images (left and right) from the ARRI
-% camera 
-%
-%      set(groot,'defaultAxesColorOrder',co)
-%
+%% s_arriHomogeneity.m
+
+% Purpose: Make sure that the ARRIScope raw image data are linear with
+% light intensity for each of 6 different lights:
+%       Red, Green, Blue, UV,White and Infrared
+
+% Background:
+%   We captured ARRIScope camera (RGB) images of a white calibration target
+%   under 6 different lights
+%   and we also measured the spectral radiance of the white calibration
+%   target under the 6 different lights
+%   The SPD files contain the measured light spectra
+%   The ARRI files contain the raw images (left and right) from the ARRI
+%   camera 
+%   We uploaded the data to a Flywheel database in order to archive and
+%   document the original data
+
+% IN THIS SCRIPT we
+%   1. Download the data from the Flywheel database
+%   2. unzip the data into a local directory
+%   3. 
+% Download and estimate homogeneity (linearity with respect to intensity)
+% Documentation and results of this analysis are in 
+% https://docs.google.com/document/d/1O_KHnzWTAt7flg8k9T0OvyRQ-bFjVbCBAMM4wdbU1O0/edit#heading=h.ows9qdbadce7
+
 % BW/JEF  SCIENSTANFORD, 2019
+
+%% Set root path for Matlab
+% 
+%      set(groot,'defaultAxesColorOrder',co)
 
 %% Open up to the data on Flywheel
 st = scitran('stanfordlabs');
@@ -20,12 +41,13 @@ thisSession  = project.sessions.findOne('label="20190208"');
 chdir(fullfile(icalRootPath,'local'));
 
 %% Get data from an acquisition for one of the channels
+% Select the light with spectra and camera images that we want to analyze
 
-channel = 'Infrared';   % 'Red','Green','Blue','Violet','White', 'Infrared'
+channel = 'Red';   % 'Red','Green','Blue','UV','White', 'Infrared'
 str     = sprintf('label=%s',channel);
 Acquisition = thisSession.acquisitions.findOne(str);
 
-%%  Down load the spectra.  Not very big.
+%%  Download the spectra.  Not very big.
 
 spdZipFile = sprintf('%s_LightSpectra_mat.zip',channel);
 spdFile = Acquisition.getFile(spdZipFile);
@@ -85,6 +107,7 @@ mx = max(spectra);
 spectra = spectra*diag(1./mx);
 %}
 
+% This plots the first principle component (mean) of the spectral energy
 [U,S,V] = svd(spectra);
 ieNewGraphWin;
 [~,idx] = max(abs(U(:,1)));
@@ -99,14 +122,18 @@ title(sprintf('Channel %s\n',channel));
 % These are the projection on the first principal component, scaled so
 % that the brightest is 1
 levels = pc1'*spectra;
-levels = levels/max(levels(:));
+% levels = levels/max(levels(:));
 
 % Compare with 'code'
 ieNewGraphWin;
-plot(code/max(code),levels,'o')
-grid on; xlabel('Scaled file code'); ylabel('SPD level');
-set(gca,'ylim',[0 1.1]); 
-identityLine;
+% plot(code/max(code),levels,'o');
+plot(code,levels,'o');
+% plot(code,levels,'o');
+% grid on; xlabel('Scaled file code'); ylabel('SPD level');
+grid on; xlabel('Level file code'); ylabel('SPD level');
+% set(gca,'ylim',[0 1.1]); 
+% identityLine;
+title(sprintf('Channel %s\n',channel));
 
 %% Find the mean values in the region of the ARRI images
 
@@ -126,16 +153,18 @@ for ii=1:nFiles
     a = split(a{3},'.');
     code(ii) = str2double(a{1});
     arriRGB = arriRead(arriFiles(ii).name);
+    % imagescRGB(arriRGB);
     arriCrop = imcrop(arriRGB,rect);
     arriMean(:,ii) = mean(RGB2XWFormat(arriCrop))';
 end
 
 % 
 ieNewGraphWin;
-plot(code,arriMean,'o');
-set(gca,'xlim',[0 10]);
-xlabel('Code level'); ylabel('Channel mean');
+plot(code,arriMean(1,:),'ro', code,arriMean(2,:),'go',code,arriMean(3,:),'bo');
+% set(gca,'xlim',[0 11]);
+xlabel('Code level','FontSize',24); ylabel('Channel mean','FontSize',24);
 grid on; legend({'R','G','B'});
+title(sprintf('Channel %s\n',channel),'FontSize',24,'FontWeight','normal');
 
 %%
 chdir(fullfile(icalRootPath,'local'));
