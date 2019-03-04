@@ -43,9 +43,11 @@ chdir(fullfile(icalRootPath,'local'));
 %% Get data from an acquisition for one of the channels
 % Select the light with spectra and camera images that we want to analyze
 
+
 channel = 'Red';   % 'Red','Green','Blue','UV','White', 'Infrared'
 str     = sprintf('label=%s',channel);
 Acquisition = thisSession.acquisitions.findOne(str);
+
 
 %%  Download the spectra.  Not very big.
 
