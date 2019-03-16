@@ -18,6 +18,12 @@ function [ariRGB, ariRaw] = arriRead( fileName )
 % Based on importASAri.m from ARRI folks
 %    Julian Klabes - 04/21/2017
 %
+% NOTE:
+%   The histogram showing the number of pixels at different levels seems to
+%   be oddly regular, with high-low-high-low ordering when the data are
+%   near the noise. Perhaps this because we are packing 12-bit data into 16
+%   bit bins.
+%
 % See also
 %    
 
@@ -56,7 +62,7 @@ function [R,G,B,ariRaw] = ari2RGB(fn)
     assert((mod(nrow,2) + mod(ncol,2)) == 0,'rows & cols must be even');
     % prepare odd rows
     for i = 1:2:nrow
-        row = ariRaw(i,:);
+        % row = ariRaw(i,:);
         R(i,2:2:end) = ariRaw(i,2:2:end);
         R(i,1) = ariRaw(i,2);
         R(i,3:2:(end-1)) = 0.5*(ariRaw(i,2:2:(end-2)) + ariRaw(i,4:2:end));
@@ -66,7 +72,7 @@ function [R,G,B,ariRaw] = ari2RGB(fn)
     end
     % prepare even rows
     for i = 2:2:nrow
-        row = ariRaw(i,:);
+        % row = ariRaw(i,:);
         G(i,2:2:end) = ariRaw(i,2:2:end);
         G(i,1) = ariRaw(i,2);
         G(i,3:2:(end-1)) = 0.5*(ariRaw(i,2:2:(end-2)) + ariRaw(i,4:2:end));
@@ -74,6 +80,11 @@ function [R,G,B,ariRaw] = ari2RGB(fn)
         B(i,2:2:(end-1)) = 0.5*(ariRaw(i,1:2:(end-2)) + ariRaw(i,3:2:end));
         B(i,end) = ariRaw(i,end-1);
     end
+    
+    % The G image is adjusted by averaging across the rows, making the G
+    % resolution comparable to the R and B resolution.  Not sure we should
+    % do this, really, but that's what Arri shipped us.  We could put a
+    % flag here to stop the blurring.
     % fill odd rows
     B(1,:) = B(2,:);
     tmpG = G;
@@ -110,7 +121,7 @@ end
 % Root Information Header
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 fseek(mFid,8,'bof');
-headerSize = fread(mFid,1,'uint32');
+headerSize    = fread(mFid,1,'uint32');
 versionNumber = fread(mFid,1,'uint32');
 if ((versionNumber ~= 3) && (versionNumber ~= 1))
     error('imReadAri: The input file is not a ARIv3 file\n');
@@ -121,10 +132,10 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if (versionNumber == 3)
     fseek(mFid,20,'bof');
-    ariRawWidth = fread(mFid,1,'uint32');
+    ariRawWidth  = fread(mFid,1,'uint32');
     ariRawHeight = fread(mFid,1,'uint32');
 else
-    ariRawWidth = 2880;
+    ariRawWidth  = 2880;
     ariRawHeight = 1620;
 end
 
@@ -137,7 +148,7 @@ fseek(mFid,headerSize,'bof');
 data = fread(mFid,[1,dataSize],'*ubit12'); 
 fclose(mFid);
 %ariRaw=zeros(ariRawWidth,ariRawHeight,'uint16');
-lut = uint16(qlut(12, 16));
+lut    = uint16(qlut(12, 16));
 ariRaw = lut((data)+1); %"+1" to get values betweet 1 and 2^16
 
 ariRaw = reshape(ariRaw, ariRawWidth, ariRawHeight)';
@@ -151,11 +162,11 @@ function lut = qlut(inbits, outbits)
 %                    (the inverse function)
 %
 % Parameters:
-% inbits - the bit depth of the input values (size of the LUT)
-% outbits - the bit depth of the output values (range of LUT values)
+%   inbits - the bit depth of the input values (size of the LUT)
+%   outbits - the bit depth of the output values (range of LUT values)
 %
 % Returns:
-% Ann array of length 2^inbits
+%   An array of length 2^inbits
 %
 % Description: 
 % The compression is done by increased bit shifting. The breaks are powers 
@@ -178,17 +189,17 @@ function lut = bitPacking(inbits, mantissa, mode)
 % lut = qlut(16, 9, 'unpack') compute the LUT for the inverse function
 %                  
 % Parameters:
-% inbits - the bit depth of the input values (size of the LUT)
-% mantissa - the bit depth of the mantissa in the encoding
-% mode - 'pack' or 'unpack'
+%  inbits - the bit depth of the input values (size of the LUT)
+%  mantissa - the bit depth of the mantissa in the encoding
+%  mode - 'pack' or 'unpack'
 %
 % Returns:
-% For 'pack' mode: an array of 2^inbits elements
+% For 'pack' mode:   an array of 2^inbits elements
 % For 'unpack' mode: the length depends on the encoding
 %
 % Description: 
-% The compression is done by increased bit shifting. The breaks are powers 
-% of 2. At each break one more bit is shifted.
+%  The compression is done by increased bit shifting. The breaks are powers 
+%  of 2. At each break one more bit is shifted.
 %
 
 lobits = mantissa + 1;
