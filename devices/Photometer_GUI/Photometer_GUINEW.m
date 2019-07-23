@@ -12,7 +12,8 @@ version = uicontrol('Style','text','String','Version','Position',[665,350,120,45
 versionMenu = uicontrol('Style','popupmenu','String',{'PR 670','PR 715'},'Position',[600,305,140,55],'FontSize', 16,'Callback',{@versionMenu_Callback});
 scaleLabel = uicontrol('Style','text','String','Y Axis Scale','Position',[600,265,130,45],'FontSize', 16,'BackgroundColor',[.8,.8,.8]);
 yaxisScale = uicontrol('Style','popupmenu','String',{'Linear','Log'},'Position',[600,220,140,55],'FontSize', 16,'Callback',{@yaxisScale_Callback});
-saveFileMenu = uicontrol('Style','pushbutton','String',{'Choose File'},'Position',[600,125,140,55],'FontSize', 16,'Callback',{@saveFileMenu_Callback});
+saveFileMenu = uicontrol('Style','pushbutton','String',{'Choose File'},'Position',[600,125,140,55],'FontSize', 16,'BackgroundColor',[.75,.75,.75],'FontWeight','Bold','Callback',{@saveFileMenu_Callback});
+saveGraphButton = uicontrol('Style','pushbutton','String','Save Graph','Position',[210, 610, 150, 30],'FontSize', 16,'BackgroundColor',[.85,.85,.85],'Callback',{@saveGraphButton_Callback});
 iterationNum = 1;
 iterationMenu = uicontrol('Style','edit','String',string(iterationNum),'Position',[655,480,170,55],'FontSize', 16,'Callback',{@iterationMenu_Callback});
 iterationText = uicontrol('Style','text','String','Number of Measurements','Position',[655,550,170,55],'FontSize', 16,'BackgroundColor',[.8,.8,.8]);
@@ -28,18 +29,19 @@ uistack(panel,'bottom');
 faxes1 = axes('Parent',panel,'Units','pixels','Position',[70,60,400,400]);
 xlabel(faxes1, 'Wavelength, nm', 'FontSize', 16)
 ylabel(faxes1, 'Irradiance (W/sr/m^2)', 'FontSize', 16)
-title(faxes1, 'Comparing Wavelength of Light to Its Irradiance', 'FontSize', 16)
+title(faxes1, 'Wavelength vs Irradiance', 'FontSize', 16)
 axesGroup = faxes1;
 
 graph = 1;
 graphLabel = sprintf('Graph %d',graph);
-graphNum = uicontrol('Style','text','String',graphLabel,'Position',[250,595,70,20],'FontSize', 12,'FontWeight','Bold','BackgroundColor',[.7,.7,.7]);
+graphNum = uicontrol('Style','text','String',graphLabel,'Position',[250,585,70,20],'FontSize', 12,'FontWeight','Bold','BackgroundColor',[.7,.7,.7]);
 
 %Sets objects to align with their centers.
 align([measureButton,yaxisScale,version,scaleLabel,versionMenu,saveFileMenu,iterationMenu,iterationText,saveTo,frame,folderButton],'Center','None');
 align([backButton,nextButton,graphNum],'None','Center');
 
 %Normalize units to resize automatically.
+saveGraphButton.Units = 'normalized';
 f.Units = 'normalized';
 measureButton.Units = 'normalized';
 version.Units = 'normalized';
@@ -103,6 +105,9 @@ function yaxisScale_Callback(source, ~)
     indexNum = 0;
     str = source.String;
     value = source.Value;
+    for num = 1:iteration
+        cla(axesGroup(num), 'reset')
+    end
     % Set current data to the selected data set.
     switch str{value}
         case 'Linear'
@@ -119,7 +124,7 @@ function yaxisScale_Callback(source, ~)
                 plot(axesGroup(indexNum), wav, spd)
                 xlabel(axesGroup(indexNum), 'Wavelength, nm', 'FontSize', 16)
                 ylabel(axesGroup(indexNum), 'Irradiance (W/sr/m^2)', 'FontSize', 16)
-                title(axesGroup(indexNum), 'Comparing Wavelength of Light to Its Irradiance', 'FontSize', 16)
+                title(axesGroup(indexNum), 'Wavelength vs Irradiance', 'FontSize', 16)
             end
         case 'Log'
             logOn = true;
@@ -135,7 +140,7 @@ function yaxisScale_Callback(source, ~)
                 plot(axesGroup(indexNum), wav, logSpd)
                 xlabel(axesGroup(indexNum), 'Wavelength, nm', 'FontSize', 16)
                 ylabel(axesGroup(indexNum), 'Irradiance (W/sr/m^2)', 'FontSize', 16)
-                title(axesGroup(indexNum), 'Comparing Wavelength of Light to Its Irradiance', 'FontSize', 16)
+                title(axesGroup(indexNum), 'Wavelength vs Irradiance', 'FontSize', 16)
             end
     end
     for num = 1:iteration
@@ -149,6 +154,15 @@ saveFileName = []; %Sets saveFileName to an empty array.
 chooseFile = false;
 
 promptOn = 0;
+
+function saveGraphButton_Callback(~,~)
+    if test == true
+        h = figure('Position', [100, 400, 550, 550]);
+        copyobj(axesGroup(graph), h)
+        filename = string(saveFileName);
+        saveas(h, strcat(folder,'\',filename,'_','Graph',string(graph)))
+    end
+end
 
 %Selects the file to save to depending on the text typed.
 function saveFileMenu_Callback(~, ~)
@@ -210,6 +224,7 @@ function saveFileMenu_Callback(~, ~)
 end
 
 clearData = 0;
+
 %Defines the action that occurs when a version is selected.
 function measureButton_Callback(~, ~)
     if folderSelect == false
@@ -226,6 +241,9 @@ function measureButton_Callback(~, ~)
             graphLabel = sprintf('Graph %d',graph);
             graphNum.String = graphLabel;
             indexNum = 0;
+            for num = 1:iteration
+                cla(axesGroup(num), 'reset')
+            end
         end
         %Saves the data into the correct row and column for PR 670.
         if measureIsTrue == 1
@@ -237,20 +255,20 @@ function measureButton_Callback(~, ~)
                     plot(axesGroup(indexNum), wav, spd)
                     xlabel(axesGroup(indexNum), 'Wavelength, nm', 'FontSize', 16)
                     ylabel(axesGroup(indexNum), 'Irradiance (W/sr/m^2)', 'FontSize', 16)
-                    title(axesGroup(indexNum), 'Comparing Wavelength of Light to Its Irradiance', 'FontSize', 16)
+                    title(axesGroup(indexNum), 'Wavelength vs Irradiance', 'FontSize', 16)
                 else
                     indexNum = indexNum + 1;
                     plot(axesGroup(indexNum), wav, logSpd)
                     xlabel(axesGroup(indexNum), 'Wavelength, nm', 'FontSize', 16)
                     ylabel(axesGroup(indexNum), 'Irradiance (W/sr/m^2)', 'FontSize', 16)
-                    title(axesGroup(indexNum), 'Comparing Wavelength of Light to Its Irradiance', 'FontSize', 16)
+                    title(axesGroup(indexNum), 'Wavelength vs Irradiance', 'FontSize', 16)
                 end
                 result(:,num) = wav;
                 result(:,num+1) = spd;
                 filename = string(saveFileName);
                 save(strcat(folder,'\',filename), 'result');
             end
-            hgsave(axesGroup(graph), strcat(folder,'\',filename))
+            saveas(f, strcat(folder,'\',filename))
             for num = 1:iteration
                 axis(axesGroup(num), 'off')
             end
@@ -266,20 +284,20 @@ function measureButton_Callback(~, ~)
                     plot(axesGroup(indexNum), wav, spd)
                     xlabel('Wavelength, nm', 'FontSize', 16)
                     ylabel('Irradiance (W/sr/m^2)', 'FontSize', 16)
-                    title('Comparing Wavelength of Light to Its Irradiance', 'FontSize', 16)
+                    title('Wavelength vs Irradiance', 'FontSize', 16)
                 else
                     indexNum = indexNum + 1;
                     plot(axesGroup(indexNum), wav, logSpd)
                     xlabel(plotGraph, 'Wavelength, nm', 'FontSize', 16)
                     ylabel(plotGraph, 'Irradiance (W/sr/m^2)', 'FontSize', 16)
-                    title(plotGraph, 'Comparing Wavelength of Light to Its Irradiance', 'FontSize', 16)
+                    title(plotGraph, 'Wavelength vs Irradiance', 'FontSize', 16)
                 end
                 result(num,:) = wav;
                 result(num+1,:) = spd;
                 filename = string(saveFileName);
                 save(strcat(folder,'\',filename), 'result');
             end
-            hgsave(axesGroup(graph), strcat(folder,'\',filename))
+            saveas(f, strcat(folder,'\',filename))
             for num = 1:iteration
                 axis(axesGroup(num), 'off')
             end
@@ -294,22 +312,24 @@ end
 %Selects number of measurements to be taken.
 function iterationMenu_Callback(source, ~)
     str = source.String;
-    if clearData >= 2
-        clear axesGroup
-        axesGroup = faxes1;
-    end
     if ~isnan(str2double(str))
         iteration = str2double(str);
+        if clearData >= 1
+            for num = 1:iteration
+                if num ~= 1
+                    clear axesGroup(num)
+                end
+            end
+            axesGroup = faxes1;
+        end
         for num = 1:str2double(str)
             if num ~= 1
                 numValid = true;
                 iterationNum = iterationNum + 1;
                 plotGraph = axes('Parent',panel,'Units','pixels','Position',[70,60,400,400]);
                 plotGraph.Units = 'normalized';
-                xlabel(plotGraph, 'Wavelength, nm', 'FontSize', 16)
-                ylabel(plotGraph, 'Irradiance (W/sr/m^2)', 'FontSize', 16)
-                title(plotGraph, 'Comparing Wavelength of Light to Its Irradiance', 'FontSize', 16)
                 axesGroup = [axesGroup, plotGraph];
+                axis(axesGroup(num), 'off')
             end
         end
     else
