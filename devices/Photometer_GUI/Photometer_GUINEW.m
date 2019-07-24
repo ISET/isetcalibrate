@@ -227,6 +227,7 @@ clearData = 0;
 
 %Defines the action that occurs when a version is selected.
 function measureButton_Callback(~, ~)
+    result = zeros(87);
     if folderSelect == false
         msgbox('Select a folder', 'Error', 'error');
     elseif chooseFile == false
