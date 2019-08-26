@@ -67,7 +67,7 @@ movegui(f,'center')
 
 iteration = 1; %Default value for number of measurements.
 
-result = zeros(87);
+result = [];
 
 test = false;
 
@@ -169,9 +169,9 @@ function saveFileMenu_Callback(~, ~)
     if promptOn == 0
         prompt = figure('Position', [1155,475,470,275]);
         subject = uicontrol(prompt,'Style','edit','String','Select Subject...','Position',[25,160,180,60],'FontSize', 16,'Callback',{@subject_Callback});
-        lightCondition = uicontrol(prompt,'Style','popupmenu','String',{'Select Light...','BlueFlashlight','Velscope','CST455','BlueOralEye'},'Position',[270,120,190,85],'FontSize', 16,'Callback',{@lightCondition_Callback});
-        filterCondition = uicontrol(prompt,'Style','popupmenu','String',{'Select Filter...','NoFilter','HoyaK2','Hoya25A'},'Position',[25,20,190,85],'FontSize', 16,'Callback',{@filterCondition_Callback});
-        apertureCondition = uicontrol(prompt,'Style','popupmenu','String',{'Select Aperture...','QuarterDegAperture','HalfDegAperture','OneDegAperture'},'Position',[270,20,190,85],'FontSize', 16,'Callback',{@apertureCondition_Callback});
+        lightCondition = uicontrol(prompt,'Style','popupmenu','String',{'Select Light...','tungsten','blueflashlight','velscope','cst455','blueoraleye','whiteoraleye'},'Position',[270,120,190,85],'FontSize', 16,'Callback',{@lightCondition_Callback});
+        filterCondition = uicontrol(prompt,'Style','popupmenu','String',{'Select Filter...','nofilter','hoyak2','hoya25a'},'Position',[25,20,190,85],'FontSize', 16,'Callback',{@filterCondition_Callback});
+        apertureCondition = uicontrol(prompt,'Style','popupmenu','String',{'Select Aperture...','quarterdeg','halfdeg','onedeg'},'Position',[270,20,190,85],'FontSize', 16,'Callback',{@apertureCondition_Callback});
         closeButton = uicontrol(prompt,'Style','pushbutton','String','Save/Exit','Position',[165,20,150,45],'FontSize', 16,'FontWeight','Bold','Callback',{@closeButton_Callback});
         closeButton.Units = 'normalized';
         prompt.Units = 'normalized';
@@ -227,6 +227,7 @@ clearData = 0;
 
 %Defines the action that occurs when a version is selected.
 function measureButton_Callback(~, ~)
+    result = [];
     if folderSelect == false
         msgbox('Select a folder', 'Error', 'error');
     elseif chooseFile == false
@@ -242,7 +243,7 @@ function measureButton_Callback(~, ~)
             graphNum.String = graphLabel;
             indexNum = 0;
             for num = 1:iteration
-                cla(axesGroup(num), 'reset')
+                cla(axesGroup(num))
             end
         end
         %Saves the data into the correct row and column for PR 670.
@@ -265,15 +266,23 @@ function measureButton_Callback(~, ~)
                 end
                 result(:,num) = wav;
                 result(:,num+1) = spd;
-                filename = string(saveFileName);
-                save(strcat(folder,'\',filename), 'result');
+                radiance(:,indexNum) = result(:,num+1);
             end
+            wave(:,1) = wav;
+            filename = string(saveFileName);
+            save(strcat(folder,'\',filename), 'wave', 'radiance');
             saveas(f, strcat(folder,'\',filename))
             for num = 1:iteration
                 axis(axesGroup(num), 'off')
             end
             axis(axesGroup(graph), 'on')
             msgbox('Done!', 'Success');
+            z = figure('Position', [100, 400, 550, 550]);
+            newGraph = copyobj(axesGroup(1), z);
+            for num = 1:iteration
+                hold on;
+                plot(newGraph, wave, radiance(:,num));
+            end
         %Saves the data into the correct row and column for PR 715.
         elseif measureIsTrue == 0
             for num = 1:2:iteration*2
@@ -294,10 +303,18 @@ function measureButton_Callback(~, ~)
                 end
                 result(num,:) = wav;
                 result(num+1,:) = spd;
-                filename = string(saveFileName);
-                save(strcat(folder,'\',filename), 'result');
+                radiance(indexNum,:) = result(num+1,:);
             end
+            wave(1,:) = wav;
+            filename = string(saveFileName);
+            save(strcat(folder,'\',filename), 'wave', 'radiance');
             saveas(f, strcat(folder,'\',filename))
+            z = figure('Position', [100, 400, 550, 550]);
+            newGraph = copyobj(axesGroup(1), z);
+            for num = 1:iteration
+                hold on;
+                plot(newGraph, wave, radiance(num,:));
+            end
             for num = 1:iteration
                 axis(axesGroup(num), 'off')
             end
