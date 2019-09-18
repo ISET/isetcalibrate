@@ -1,4 +1,8 @@
 function Photometer_GUINEW
+%% ieInit first
+ieInit;
+%%
+
 %Select the photometer version currently in use and select an option to
 %scale the Y axis. Choose a place to save the data as well as the amount of 
 %measurements to be taken. When adjusted, press 'Measure Light' to plot the data.
@@ -270,7 +274,9 @@ function measureButton_Callback(~, ~)
             end
             wave(:,1) = wav;
             filename = string(saveFileName);
-            save(strcat(folder,'\',filename), 'wave', 'radiance');
+            % This where the measured data is saved
+            % save(strcat(folder,'\',filename), 'wave', 'radiance');
+            ieSaveSpectralFile(wav, radiance, 'Measurement for PR670', strcat(folder,'\',filename));
             saveas(f, strcat(folder,'\',filename))
             for num = 1:iteration
                 axis(axesGroup(num), 'off')
@@ -307,7 +313,8 @@ function measureButton_Callback(~, ~)
             end
             wave(1,:) = wav;
             filename = string(saveFileName);
-            save(strcat(folder,'\',filename), 'wave', 'radiance');
+            % save(strcat(folder,'\',filename), 'wave', 'radiance');
+            ieSaveSpectralFile(wav, radiance, 'Measurement for PR715', strcat(folder,'\',filename));
             saveas(f, strcat(folder,'\',filename))
             z = figure('Position', [100, 400, 550, 550]);
             newGraph = copyobj(axesGroup(1), z);
