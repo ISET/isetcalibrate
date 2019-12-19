@@ -64,8 +64,8 @@ function [data, wavelengths, peak] = pr670spectrum(port)
 	
 	while(finish == 0)
 	   
-	    portOut= readStr
-	
+	   portOut= readStr
+       
 	   if ( start == 0 && ~isempty(findstr(portOut,'00000')) )
 	        delim=findstr(portOut,',');
 	        peak = str2num(portOut(delim(2)+1:delim(3)-1));

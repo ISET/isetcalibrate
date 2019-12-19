@@ -55,7 +55,7 @@ function port = pr670init(id)
 % 	fprintf(port,'PR670');
 	
 	% Blink the backlight for visual indication (This is useful since I don't
-	% know of any other way to find out if Matalb was really able to talk to
+	% know of any other way to find out if Matlab was really able to talk to
 	% the PR715)
 	
 %     fprintf(port,'B3 \n'); pause(0.75);

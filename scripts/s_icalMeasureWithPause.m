@@ -1,7 +1,12 @@
-%% s_MeasureWithPause
+%% s_iCalMeasureWithPuase - based on ZLY script
+%
 % Remotely control the PR670 photospectrometer to measure spectral
 % reflection for OralEye project. Edit the code so that the result can be
 % saved with the same format as ieSaveSpectralFiles do.
+%
+% PsychToolbox must be on the path and it must have the proper ordering of
+% the IOPort directories.
+%
 
 %% Initialize isetcam to use ieSaveSpectralFiles.m function
 ieInit;
@@ -9,26 +14,26 @@ ieInit;
 %%
 tic
 % Repeated measurements of a light
-pathName = '20191207';
+pathName = '20191218';
 folderName = fullfile(icalRootPath, 'local', pathName);
 if ~exist(folderName, 'dir'), mkdir(folderName); end
 cd(folderName);
 % SubjectName = 'WhiteTarget_Velscope';
 %% Define the filename session
 
-target = 'mcc24'; % tongue or white target
-lightsource = 'OralEye_blue'; % LED400 / LED425 / LED450
-filter = 'Y44'; % Y52 / NoY52
-posNumber = 'position2'; % # of the positions
+target = 'whiteSurface'; % tongue or white target
+lightsource = 'OralEye2_BP'; % LED400 / LED425 / LED450
+filter = 'None'; % Y52 / NoY52
+posNumber = 'position1'; % # of the positions
 SubjectName = strcat(target,'_' ,lightsource,'_' ,filter,'_' ,posNumber);
 
 %% Define the comment
 subjectNumber = 'none';
 shortPassFilter = 'None';
 spectroRadioMeterModel = 'PR670';
-longPassFilter = 'Y44';
+longPassFilter = 'None';
 power = 'None';
-apertureSize = '0.5';
+apertureSize = '1';
 
 comment = strcat(target, " measurements for subject ", subjectNumber,...
             " illuminated with a ", lightsource, " with ", shortPassFilter,...
@@ -40,9 +45,9 @@ comment = strcat(target, " measurements for subject ", subjectNumber,...
 photometerCOM = 'COM5';           % Select the correct COM port number for the photometer
 %spectr = figure;
 
-if ~isempty(instrfind) 
-fclose(instrfind);
-delete(instrfind);
+if ~isempty(instrfind)
+    fclose(instrfind);
+    delete(instrfind);
 end
 instrfind;
 
@@ -55,12 +60,12 @@ msg = PR670init(photometerCOM);
 % fprintf(ph,'S,,,1\n');
 % pause(1);
 %%
-nMeasruement = 1;
+nRepetitions = 3;
 data = [];
 %%
 wav = [350:5:780];
 
-for ii = 1:nMeasruement
+for ii = 1 %:nRepetitions
     fprintf('Measuring spectrum.... ');
     spd =[];
 
@@ -85,7 +90,7 @@ for ii = 1:nMeasruement
 end
 
 fullPathName = fullfile(pwd, SubjectName);
-saveas(gcf,[SubjectName,'_mcc.fig'],'fig');
+saveas(gcf,[SubjectName,'.fig'],'fig');
 ieSaveSpectralFile(wav', data, comment, fullPathName);
 toc
 % fclose(ph);
