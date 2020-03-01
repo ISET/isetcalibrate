@@ -1,7 +1,24 @@
-%% s_iCalMeasureMCC
+function [fname,msg] = icalMeasure(info,varargin)
+% Make a single measurement with the PR670
 %
+% Info defines the properties of this measurement
 %
+% See also
+%  icalInfo
 
+% Examples:
+%{
+ info = icalInfo;
+ fname = icalMeasure(info,'directory','test');
+ foo = load(fname);
+ ieNewGraphWin; plot(foo.wavelength,foo.data);
+%}
+
+
+% NOTE:  This may have to be run separately if PsychToolbox is not
+% configured correctly.  That happens when we restart Matlab from time to
+% time.
+%
 %{
 % Remember that for the PsychToolbox this must be the ordering of the
 % IOPort call.
@@ -16,8 +33,22 @@ type yes to all the questions
 It should work after it finishes setup.
 %}
 
-%% Initialize isetcam to use ieSaveSpectralFiles.m function
-ieInit;
+%% Parse inputs
+p = inputParser;
+p.addRequired('info',@isstruct);
+
+defaultDirectory = [datestr(now,'yyyy-mm-dd'),'-Unknown'];
+p.addParameter('directory',defaultDirectory,@ischar);
+p.addParameter('doplot',true,@islogical);
+p.parse(info,varargin{:});
+info = p.Results.info;
+
+target      = info.target;
+lightsource = info.lightsource;
+pr670filter = info.pr670filter;
+comment     = info.comment;
+doPlot      = p.Results.doplot;
+dirName     = p.Results.directory;
 
 %% Initialize the PR670 with PsychToolbox functions
 
@@ -50,21 +81,9 @@ wave   = startW:stepW:endW;  % Default pr670 wavelength sampling
 % pause(1);
 
 %% Initialize writing
-dirName = [datestr(now,'yyyy-mm-dd'),'Tongue_Krithin_405nm'];
 folderName = fullfile(icalRootPath, 'local', dirName);
 if ~exist(folderName, 'dir'), mkdir(folderName); end
 cd(folderName);
-
-%% Define the properties of this measurement
-% info.target      = 'white_surface';  % tongue or white target
-info.target      = 'White';
-info.lightsource = '405nm'; %
-info.filter      = 'SP_LP_Y44';      % 
-info.apertureSize = '1';
-info.spectroRadioMeterModel = 'PR670';
-info.nRepetitions = 1;
-info.comment = 'White_Illuminated_with_405_nm_and_SP_LP_Y44_apetertureSize_1';
-comment = jsonwrite(info);
 
 %% Make measurements and save them
 
@@ -74,26 +93,19 @@ fprintf('Measuring spectrum...');
 % PsychToolbox function
 spd = PR670measspd([startW stepW length(wave)]);
 fprintf('Done\n')
-% oeSet('light','off')
 
-ieNewGraphWin;
-plot(wave,spd);
-xlabel('Wavelength (nm)');
-ylabel('Radiance (watts/sr/m2/nm)')
-
-fname = sprintf('%s_%s_%s_%s',datestr(now,'hh-mm-ss'),info.target,info.lightsource,info.filter);
+fname = sprintf('%s_%s_%s_%s',datestr(now,'hh-mm-ss'),target,lightsource,pr670filter);
 fullPathName = fullfile(folderName, fname);
 fname =ieSaveSpectralFile(wave', spd, comment, fullPathName);
 
+%%
+if doPlot
+    ieNewGraphWin;
+    plot(wave,spd);
+    xlabel('Wavelength (nm)');
+    ylabel('Radiance (watts/sr/m2/nm)')
+end
 %% Quit PR670 remote mode
 PR670write('Q', 0);
 
-%% END
-
-%%
-white=load('C:\Users\SCIENlab\Documents\MATLAB\isetcalibrate\local\2020-02-19Tongue_Joyce_425nm\13-02-27_White_No2_425nm_SP_LP_Y44.mat');
-whiteWave=white.wavelength;
-whiteData=white.data;
-%%
-figure;
-plot(whiteWave,whiteData);
+end
