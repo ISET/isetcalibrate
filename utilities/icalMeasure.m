@@ -24,14 +24,25 @@ function [fname,msg] = icalMeasure(info,varargin)
 % IOPort call.
 
 which -all IOPort
+
 C:\Users\SCIENlab\Documents\MATLAB\Psychtoolbox\Psychtoolbox-3-master\Psychtoolbox\PsychBasic\MatlabWindowsFilesR2007a\IOPort.mexw64
 C:\Users\SCIENlab\Documents\MATLAB\Psychtoolbox\Psychtoolbox-3-master\Psychtoolbox\PsychBasic\IOPort.m
 If this is not the order, then we do this:
-cd C:\Users\SCIENlab\Documents\MATLAB\Psychtoolbox\Psychtoolbox-3-master\Psychtoolbox
-then run:
-type yes to all the questions
+    cd C:\Users\SCIENlab\Documents\MATLAB\Psychtoolbox\Psychtoolbox-3-master\Psychtoolbox
+     SetupPsychtoolbox
+   type yes to all the questions
 It should work after it finishes setup.
 %}
+
+%% Validate path
+
+str = which('IOPort','-all');
+[~,~,e]= fileparts(str{1});
+if ~isequal(e,'.mexw64')
+    error('PsychToolbox needs to be set.');
+    % cd C:\Users\SCIENlab\Documents\MATLAB\Psychtoolbox\Psychtoolbox-3-master\Psychtoolbox
+    % SetupPsychtoolbox
+end
 
 %% Parse inputs
 p = inputParser;
@@ -81,10 +92,9 @@ wave   = startW:stepW:endW;  % Default pr670 wavelength sampling
 % pause(1);
 
 %% Initialize writing
-folderName = fullfile(icalRootPath, 'local', dirName);
+folderName = fullfile(pwd, dirName);
 if ~exist(folderName, 'dir'), mkdir(folderName); end
 cd(folderName);
-
 %% Make measurements and save them
 
 % oeSet('light','blue') 
