@@ -27,15 +27,21 @@ ieInit;
 % Select the correct COM port number for the photometer
 % YOu can see which COM devices exist in the device manager under Ports
 % (COM & LPT) sections.
-photometerCOM = 'COM5';
+% photometerCOM = 'COM5';
 
+
+%{
 if ~isempty(instrfind)
     fclose(instrfind);
     delete(instrfind);
 end
 tmp = instrfind;
+%}
 
 % ph = PR670init(photometerCOM);
+
+photometerCOM = char(serialportlist('available'));
+fprintf('Available COM port(s):    %s\n,',photometerCOM);
 msg = PR670init(photometerCOM);
 
 startW = 380;
