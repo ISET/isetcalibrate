@@ -140,7 +140,19 @@ for ii=6:numel(dngFiles)
 end
 
 
-%% To read it, use
+%% To read the MCC data, use
 %{
-load(ipName,'ip');
+load(ipName,'ip'); ipWindow(ip);
+load(ipName,'mccPosition');
+% This is the position of the mcc in the image.  Size is about 3K x 4K.
+center = [mccPosition(1) + mccPosition(3)/2, ...
+    mccPosition(2) + mccPosition(4)/2];
+
+% This code extracts the rgb and checks the rectangles
+cp = chartCornerpoints(ip);
+blackedge = true;
+sFactor = 0.4;
+[rects,mLocs,pSize] = chartRectangles(cp,4,6,sFactor,blackedge);
+chartRectsDraw(ip,rects);
+mRGB = chartRectsData(ip,mLocs,pSize(1)/2,false);
 %}
