@@ -52,83 +52,117 @@
 %
 % JEF/BW, 20201017
 
-%% Read the spectra from the small MCC chart
+%%
+%% Figure out the exp and speed of the images from October 24, 2020
+%%
+
+% Sort by ISO Gain
+dataDir = '/Volumes/GoogleDrive/My Drive/Data/Cornell box/Camera A/20201024/ISO gain/A';
+chdir(dataDir)
+dngFiles = dir('*.dng');
+nFiles = numel(dngFiles);
+for ii=1:nFiles
+    isoValues(ii).name = dngFiles(ii).name; %#ok<*SAGROW>
+    isoValues(ii).info = imfinfo(isoValues(ii).name);
+    isoValues(ii).isospeed = isoValues(ii).info.ISOSpeedRatings;
+    isoValues(ii).exposure = isoValues(ii).info.ExposureTime;
+end
+%% Set up matrix parameters for exp vs. speed
+
+exposure = zeros(1,numel(dngFiles));
+isospeed = zeros(1,numel(dngFiles));
+
+for ii=1:numel(dngFiles)
+    isospeed(ii) = isoValues(ii).isospeed;
+    exposure(ii) = isoValues(ii).exposure;
+end
+% histogram(log10(exposure),20); xlabel('Log10 exp time (sec)');
+% histogram(log10(isospeed),20); xlabel('Log10 speed')
+
+uIsospeeds = unique(isospeed);
+uExposure  = unique(exposure);
+nSpeed    = length(uIsospeeds);
+nExposure  = length(uExposure);
+data = zeros(nExposure,nSpeed);
+
+%% Arrange from slowest to fastest speeds
+% Not sure this is valuable.
+%{
+[speeds, idx] = sort(isospeeds);
+isoValues = isoValues(idx);
+%}
+
+%% Find all the files with a particular exposure
+
+expSpeed = zeros(nExposure,nSpeed);
+for ii=1:nExposure
+    % Find all the data with this exposure
+    lst = (exposure == uExposure(ii));
+    % What are the speeds for these?
+    speedList = isospeed(lst);
+    for jj=1:length(speedList)
+        idx = find(speedList(jj) == uIsospeeds);
+        expSpeed(ii,idx) = expSpeed(ii,idx) + 1;
+    end
+end
+
+%%
+ieNewGraphWin;
+imagesc(expSpeed);
+xlabel('Speed'); ylabel('Exposure');
+
+%%
+%% Images from October 4, 2020 and October 24, 2020
+%%
 
 % MCC images with Camera A
 % These are from the little setup
 
-%  These are MCC images from 20201004 made within the Gretag Box.
-% '/Volumes/GoogleDrive/My Drive/Data/Cornell box/Camera A/smallerGretagBoxMCC/Day'
-% '/Volumes/GoogleDrive/My Drive/Data/Cornell box/Camera A/smallerGretagBoxMCC/CWF'
-% '/Volumes/GoogleDrive/My Drive/Data/Cornell box/Camera A/smallerGretagBoxMCC/A'
+% September 26th data
+% '/Volumes/GoogleDrive/My Drive/Data/Cornell box/Camera A/opticalBenchMCC/20200926'
 
-dataDir = '/Volumes/GoogleDrive/My Drive/Data/Cornell box/Camera A/opticalBenchMCC/20200926';
+%  October 4, 2020 MCC images from 20201004 made within the Gretag Box.
+%  '/Volumes/GoogleDrive/My Drive/Data/Cornell box/Camera A/smallerGretagBoxMCC/Day'
+%  '/Volumes/GoogleDrive/My Drive/Data/Cornell box/Camera A/smallerGretagBoxMCC/CWF'
+%  '/Volumes/GoogleDrive/My Drive/Data/Cornell box/Camera A/smallerGretagBoxMCC/A'
+
+% October 24 data also in the Gretag box
+%  '/Volumes/GoogleDrive/My Drive/Data/Cornell box/Camera A/20201024/ISO gain/A';
+% 
+dataDir = '/Volumes/GoogleDrive/My Drive/Data/Cornell box/Camera A/20201024/ISO gain/A';
+chdir(dataDir);
+
 dngFiles = dir(fullfile(dataDir,'*.dng'));
+% [locs,rect] = ieROISelect(sensor);
+% save('mccRect','rect');
+load('mccRect','rect');
 
-for ii=6:numel(dngFiles)
+%% Loop over all the DNG files and make the ip files
+
+for ii=1:numel(dngFiles)
+    % We are in the data directory
     fname = fullfile(dngFiles(ii).name);
     
-    %% Metadata
-    if ~exist(fullfile(dataDir,fname),'file')
-        error('No file found %s\n',fname);
-    else
-        chdir(dataDir);
-        img          = dcrawRead(fname);
-        % dcInfo       = dcrawInfo(fname);
-        info         = imfinfo(fname);
-        isoSpeed     = info.DigitalCamera.ISOSpeedRatings;
-        exposureTime = info.DigitalCamera.ExposureTime;
-        blackLevel   = info.SubIFDs{1}.BlackLevel;
-    end
+    [sensorM, info] = sensorDNGRead(fname);
     
-    blackLevel = blackLevel(1);
-    img = ieClip(img,blackLevel,[]);   % sets the lower to blacklevel, no upper bound
+    % For some of the data sets we have to do this manually
+    % [~,rect]  = ieROISelect(sensorM);
     
-    %% These are the raw data.  Let's have a look.
-    
-    %{
-      ieNewGraphWin;
-      % Let's make the black level 0
-      imagesc((double(img) - blackLevel).^(1/2.2)); axis image;
-      colormap(gray)
-    %}
-    
-    %% Stuff the measured raw data into a simulated sensor
-    
-    measSensorSize = size(img);
-    % clear sensorM;
-    
-    sensorM = sensorCreate('IMX363');
-    sensorM = sensorSet(sensorM,'size',size(img));
-    sensorM = sensorSet(sensorM,'exp time',exposureTime);
-    sensorM = sensorSet(sensorM,'black level',blackLevel);
-    sensorM = sensorSet(sensorM,'name',fname);
-    
-    % Trying different patterns.  This appears to be the Bayer pattern for the
-    % Google Pixel 4a.
-    sensorM = sensorSet(sensorM,'pattern',[2 1; 3 2]);
-    
-    sensorM = sensorSet(sensorM,'digital values',img);
-    sensorM = sensorSet(sensorM,'wave',400:10:700);
-    sensorWindow(sensorM);
-    pause(1);
-    
-    %%  Crop out a central region so it's not so big
-    [~,rect]  = ieROISelect(sensorM);
+    %  Crop out a central region so it's not so big
     mccPosition = round(rect.Position);
     
     sensorCropped = sensorCrop(sensorM,mccPosition);
     ieReplaceObject(sensorCropped); pause(1);
     sensorWindow();
     
-    %% Show it in the IP window to confirm the colors are right
+    % Show it in the IP window to confirm the colors are right
     
     ip = ipCreate;
     ip = ipSet(ip,'render demosaic only',true);
     ip = ipCompute(ip,sensorCropped);
     ipWindow(ip);
     
-    %% Save out the data struct for this MCC image
+    % Save out the data struct for this MCC image
     [~,n,e] = fileparts(fname);
     ipName = ['ip',n,'.mat'];
     chdir(dataDir);
@@ -138,6 +172,16 @@ for ii=6:numel(dngFiles)
     ieDeleteObject('ip');
 
 end
+
+%%  Visualize the ip*.mat
+ipFiles = dir('ip*.mat');
+for ii=1:numel(ipFiles)
+    disp(ii);
+    load(ipFiles(ii).name,'ip');
+    ipWindow(ip);
+    pause(1);
+end
+
 
 
 %% To read the MCC data, use

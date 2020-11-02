@@ -10,10 +10,161 @@
 % 3 - Mini in the Gretag Illuminant A on 04-Oct
 % 4 - ISETCam standard MCC reflectance data
 % 5 - Arri mini reflectance measurements
-%
+% 6 - Mini in the Gretag box under all the illuminants
+% 7 - White calibration under each illuminant
+
 % JEF/BW, 20201017
 
-%% Read the spectra from the small MCC chart
+%%%%%%%%%%%%%%%%%%%%
+%% White patch data collected October 24th
+%%%%%%%%%%%%%%%%%%%%
+
+% These can be compared to the white patch on the 23rd in 'radiance'
+dataDir = '/Volumes/GoogleDrive/My Drive/Data/Cornell box/Spectral calibrations/24-Oct-2020';
+chdir(dataDir);
+
+fname = fullfile(icalRootPath,'data','mcc','20201023-mccRadianceData');
+[patchRadiance,wave,comment] = ieReadSpectra(fname);
+disp(comment);
+
+%% Illuminant A
+
+spdFiles = dir('41-white-A-*.mat');
+radiance = zeros(numel(wave),numel(spdFiles));
+for ii=1:numel(spdFiles)
+    radiance(:,ii) = ieReadSpectra(spdFiles(ii).name);
+end
+
+plotRadiance(wave,radiance);
+hold on; plot(wave,patchRadiance(:,4),'k--','LineWidth',2);
+
+ratio = radiance./patchRadiance(:,4);
+ieNewGraphWin;
+plot(wave,ratio);
+grid on;
+xlabel('wave');
+
+%% Illuminant CWF
+
+spdFiles = dir('41-white-cwf-*.mat');
+radiance = zeros(numel(wave),numel(spdFiles));
+for ii=1:numel(spdFiles)
+    radiance(:,ii) = ieReadSpectra(spdFiles(ii).name);
+end
+
+plotRadiance(wave,radiance);
+hold on; plot(wave,patchRadiance(:,28),'k--','LineWidth',2);
+
+ratio = mean(radiance,2)./patchRadiance(:,28);
+ieNewGraphWin;
+plot(wave,ratio);
+grid on; xlabel('wave');
+
+%% Illuminant Day
+
+spdFiles = dir('41-white-day-*.mat');
+radiance = zeros(numel(wave),numel(spdFiles));
+for ii=1:numel(spdFiles)
+    radiance(:,ii) = ieReadSpectra(spdFiles(ii).name);
+end
+
+plotRadiance(wave,radiance);
+hold on; plot(wave,patchRadiance(:,52),'k--','LineWidth',2);
+
+
+ratio = mean(radiance,2)./patchRadiance(:,52);
+ieNewGraphWin;
+plot(wave,ratio);
+grid on; xlabel('wave');
+
+
+%%%%%%%%%%%%%%%%%%%%
+%% October 23rd radiance measurements
+%% Gretag box calibration
+%%%%%%%%%%%%%%%%%%%%
+dataDir = '/Volumes/GoogleDrive/My Drive/Data/Cornell box/Spectral calibrations/23-Oct-2020/illuminantA';
+[mccRadiance1,wave] = icalRadianceMCCRead(dataDir);
+plotRadiance(wave,RGB2XWFormat(mccRadiance1)');
+
+dataDir = '/Volumes/GoogleDrive/My Drive/Data/Cornell box/Spectral calibrations/23-Oct-2020/illuminantCWF';
+mccRadiance2 = icalRadianceMCCRead(dataDir);
+plotRadiance(wave,RGB2XWFormat(mccRadiance2)');
+
+dataDir = '/Volumes/GoogleDrive/My Drive/Data/Cornell box/Spectral calibrations/23-Oct-2020/illuminantDay';
+mccRadiance3 = icalRadianceMCCRead(dataDir);
+plotRadiance(wave,RGB2XWFormat(mccRadiance3)');
+
+%% Assemble the different measurements into one matrix
+
+radiance = [RGB2XWFormat(mccRadiance1)', RGB2XWFormat(mccRadiance2)', RGB2XWFormat(mccRadiance3)'];
+comment = 'Radiance data collected 23 Oct under three lights. 24 columns of A, CWF, Day';
+fname = fullfile(icalRootPath,'data','mcc','20201023-mccRadianceData');
+ieSaveSpectralFile(wave',radiance,comment,fname);
+
+%% How many independent components in the radiance curves?
+
+[U,S,V] = svd(radiance,0);
+semilogy(diag(S))
+grid on; xlabel('Component'); ylabel('Weight');
+plotRadiance(wave,radiance);
+
+[coeff,score,latent,tsquared,explained] = pca(radiance);
+loglog(cumsum(explained));
+grid on; xlabel('Component'); ylabel('Variance explained');
+
+% plotRadiance(wave,U(:,1:7));
+
+%% The illuminant calibration data from 23 October
+
+dataDir = '/Volumes/GoogleDrive/My Drive/Data/Cornell box/Spectral calibrations/23-Oct-2020/calibration';
+thisDir = pwd;
+chdir(dataDir);
+wave = 380:5:780;
+
+%% Illuminant A
+
+spdFiles = dir('white-box-A-*.mat');
+radiance = zeros(numel(wave),numel(spdFiles));
+for ii=1:numel(spdFiles)
+    radiance(:,ii) = ieReadSpectra(spdFiles(ii).name);
+end
+% plotRadiance(wave,radiance);
+
+fname = fullfile(icalRootPath,'data','MCC','20201023-illuminant-A');
+comment = 'Radiance data collected 23 Oct from a white surface, illuminant A in the Gretag box';
+save(fname,'radiance','comment');
+
+%% Illuminant CWF
+
+spdFiles = dir('white-box-cwf-*.mat');
+radiance = zeros(numel(wave),numel(spdFiles));
+for ii=1:numel(spdFiles)
+    radiance(:,ii) = ieReadSpectra(spdFiles(ii).name);
+end
+% plotRadiance(wave,radiance);
+%
+fname = fullfile(icalRootPath,'data','MCC','20201023-illuminant-cwf');
+comment = 'Radiance data collected 23 Oct from a white surface, illuminant CWF in the Gretag box';
+save(fname,'radiance','comment');
+
+%% Illuminant Day
+
+spdFiles = dir('white-box-day-*.mat');
+
+radiance = zeros(numel(wave),numel(spdFiles));
+for ii=1:numel(spdFiles)
+    radiance(:,ii) = ieReadSpectra(spdFiles(ii).name);
+end
+% plotRadiance(wave,radiance);
+%
+fname = fullfile(icalRootPath,'data','MCC','20201023-illuminant-day');
+comment = 'Radiance data collected 23 Oct from a white surface, illuminant Day in the Gretag box';
+save(fname,'radiance','comment');
+
+%%%%%%%%%%%%%%%%%%%%%%%%%
+%% 26 September data.  Read the spectra from the small MCC chart 
+%% On the optical bench.
+%%%%%%%%%%%%%%%%%%%%%%%%%
 
 dataDir = '/Volumes/GoogleDrive/My Drive/Data/Cornell box/Spectral calibrations/26-Sep-2020';
 spdFiles = dir(fullfile(dataDir,'*.mat'));
