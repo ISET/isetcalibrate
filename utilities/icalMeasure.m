@@ -66,7 +66,7 @@ dirName     = p.Results.directory;
 % Select the correct COM port number for the photometer
 % YOu can see which COM devices exist in the device manager under Ports
 % (COM & LPT) sections.
-photometerCOM = 'COM5';
+photometerCOM = 'COM3';
 
 if ~isempty(instrfind)
     fclose(instrfind);
