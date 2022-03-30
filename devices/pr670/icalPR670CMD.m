@@ -6,7 +6,7 @@ function val = icalPR670CMD(pr,prCMD)
 
 % Examples:
 %{
-   icalPR670CMD(pr,'quit');
+   icalPR670CMD(pr,'local');
    icalPR670CMD(pr,'remote');
    icalPR670CMD(pr,'measure');
 %}
@@ -29,7 +29,7 @@ prCMD = ieParamFormat(prCMD);
 val = '';
 
 switch prCMD
-    case 'quit'
+    case 'local'
         cmdStr = ['Q',char(13)];       % Quit remote mode
     case 'remote'
         cmdStr = ['PHOTO',char(13)];   % Enter remote mode
