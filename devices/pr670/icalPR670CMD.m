@@ -42,8 +42,8 @@ switch prCMD
         pr.Timeout = 5;
         for ii=1:202
             thisLine = pr.readline;
-            if ii < 3, thisLine, end
-            pause(0.2);
+            if ii < 3, disp(thisLine), end
+            pause(0.01);
             if isempty(thisLine)
                 break;
             else
@@ -51,6 +51,7 @@ switch prCMD
             end
         end
         pr.Timeout = tout;
+        disp('Finished reading')
         return;
     otherwise
         error('Unknown pr command %s\n',prCMD)
