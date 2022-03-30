@@ -1,5 +1,5 @@
 function pr = icalPR670Init
-%% Open a serial port to the PR 670
+% Open a serial port to the PR 670
 %
 % Seems to be COM3 on the Windows machine.
 %

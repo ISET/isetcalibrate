@@ -1,26 +1,51 @@
 function val = icalPR670CMD(pr,prCMD)
 % Send a command to the PR 670.
-% 
-% Based on the modere modern serialport Matlab functions.
 %
+%  Synopsis
+%      val = icalPR670CMD(pr,prCMD)
+%
+% Description:
+%   Interacting with the 670, based on the modern serialport Matlab
+%   functions. This replaces the older ioPort.mex4 functions in the
+%   PsychToolbox.
+%
+% Inputs
+%   pr:  The serial port returned by icalPR670Init;
+%   prCMD:  A string indicating what you want
+%
+%      local - Set PR670 for local control
+%      remote - Set PR670 for control from computer
+%      measure - Get a SPD data set
+%      read    - Read a measured data set
+%      clear errors - 
+%      measure read - NYI
+%
+% See the Users Manual around page 112 for serial line commands
+%      
+%
+% See also
+%   icalPR670Init, icalPR670
 
 % Examples:
 %{
+   pr = icalPR670Init;
    icalPR670CMD(pr,'local');
    icalPR670CMD(pr,'remote');
    icalPR670CMD(pr,'measure');
+   val = icalPR670CMD(pr,'read');
+   ieNewGraphWin; plot(val.wave,val.energy);
 %}
 %{
-   str = icalPR670CMD(pr,'read');
-   nVals = numel(str) - 2;
-   wave = zeros(nVals,1); energy = wave;
-   for ii=3:numel(str)
-     c = split(str(ii),',');
-     wave(ii-2)  = str2num(c{1});
-     energy(ii-2) = str2num(c{2});
-   end
-   ieNewGraphWin; plot(wave,energy);
+    val = icalPR670CMD(pr,'measure read');
 %}
+%{
+   icalPR670CMD(pr,'clear error');
+%}
+%{
+ icalPR670CMD(pr,'clear read buffer')
+%}
+
+%%
 if notDefined('pr') || ~isa(pr,'internal.Serialport')
     error('Modern serial port required');
 end
@@ -28,6 +53,7 @@ end
 prCMD = ieParamFormat(prCMD);
 val = '';
 
+%%
 switch prCMD
     case 'local'
         cmdStr = ['Q',char(13)];       % Quit remote mode
@@ -35,28 +61,61 @@ switch prCMD
         cmdStr = ['PHOTO',char(13)];   % Enter remote mode
     case 'measure'
         cmdStr = ['M5',char(13)];      % Measure an SPD
+        disp('Measuring')
     case 'read'
-        % Loop to get all the lines
-        val = '';
-        tout = pr.Timeout;
-        pr.Timeout = 5;
+        % Tell the PR670 what data we want to download
+        icalPR670CMD(pr,'download');
+        
+        % Loop to read all the lines.  This 202 should probably be figured
+        % out from the wave settings.  Once we figure out the wave
+        % settings.  We think it might always be 380 to 780 in 2nm steps.
+        
+        str = '';
+        disp('Reading');
         for ii=1:202
             thisLine = pr.readline;
-            if ii < 3, disp(thisLine), end
-            pause(0.01);
+            pause(0.005);
             if isempty(thisLine)
                 break;
             else
-                val = [val; thisLine];
+                str = [str; thisLine]; %#ok<AGROW>
             end
         end
+        disp('Finished reading');
+        
+        % Convert the string to numbers
+        nVals = numel(str) - 2;
+        wave = zeros(nVals,1); energy = wave;
+        for ii=3:numel(str)
+            c = split(str(ii),',');
+            wave(ii-2)   = str2double(c{1});
+            energy(ii-2) = str2double(c{2});
+        end
+        val.str    = str;
+        val.wave   = wave; 
+        val.energy = energy;
+        return;
+    case 'measureread'
+        icalPR670CMD(pr,'measure');
+        val = icalPR670CMD(pr,'read');
+    case {'clearerror','clearerrors'}
+        cmdStr = ['C',char(13)]; 
+    case 'download'
+        cmdStr = ['D5',char(13)];
+    case 'clearreadbuffer'
+        tout = pr.Timeout;
+        pr.Timeout = 0.5;
+        thisLine = pr.readline;
+        while ~isempty(thisLine)
+            thisLine = pr.readline;
+        end
         pr.Timeout = tout;
-        disp('Finished reading')
         return;
     otherwise
         error('Unknown pr command %s\n',prCMD)
 end
 
+%% Push the command to the PR670
 for i = 1:length(cmdStr)
     pr.write(upper(cmdStr(i)),'char');
     pause(0.05)
