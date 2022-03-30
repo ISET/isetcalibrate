@@ -44,6 +44,11 @@ function val = icalPR670CMD(pr,prCMD)
 %{
  icalPR670CMD(pr,'clear read buffer')
 %}
+%{
+  icalPR670CMD(pr,'aperture large');
+  icalPR670CMD(pr,'aperture small');
+  icalPR670CMD(pr,'exposure time');
+%}
 
 %%
 if notDefined('pr') || ~isa(pr,'internal.Serialport')
@@ -62,6 +67,23 @@ switch prCMD
     case 'measure'
         cmdStr = ['M5',char(13)];      % Measure an SPD
         disp('Measuring')
+
+    case 'aperturereallytiny'
+        % 0.124
+        cmdStr = ['SF3',char(13)];
+    case 'aperturetiny'
+        % 0.25 deg
+        cmdStr = ['SF2',char(13)];
+    case 'aperturesmall'
+        % 0.5 deg
+        cmdStr = ['SF1',char(13)];
+    case 'aperturelarge'
+        % 1.0 deg
+        cmdStr = ['SF0',char(13)];
+        
+    case 'exposuretime'
+        % Set to 100 ms
+        cmdStr = ['SE0100',char(13)];
     case 'read'
         % Tell the PR670 what data we want to download
         icalPR670CMD(pr,'download');
@@ -116,9 +138,12 @@ switch prCMD
 end
 
 %% Push the command to the PR670
+disp(cmdStr)
 for i = 1:length(cmdStr)
     pr.write(upper(cmdStr(i)),'char');
     pause(0.05)
 end
+
+val = pr.readline;
 
 end
