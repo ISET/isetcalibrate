@@ -1,8 +1,8 @@
-function val = icalPR670CMD(pr,prCMD,varargin)
+function val = icalPR670CMD(pr,prCMD)
 % Send a command to the PR 670.
 %
 %  Synopsis
-%      val = icalPR670CMD(pr,prCMD,varargin)
+%      val = icalPR670CMD(pr,prCMD)
 %
 % Description:
 %   Interacting with the 670, based on the modern serialport Matlab
@@ -19,9 +19,6 @@ function val = icalPR670CMD(pr,prCMD,varargin)
 %      read    - Read a measured data set
 %      clear errors - 
 %      measure read - NYI
-%
-% Optional keyval
-%      Aperture size, time, stuff like that
 %
 % See the Users Manual around page 112 for serial line commands
 %      
@@ -63,10 +60,15 @@ val = '';
 
 %%
 switch prCMD
+    case 'backlight'
+        % We need a few of these with the number changed
+        cmdStr = ['B3',char(13)];
     case 'local'
+        % This worked
         cmdStr = ['Q',char(13)];       % Quit remote mode
     case 'remote'
-        cmdStr = ['PHOTO',char(13)];   % Enter remote mode
+        % This worked
+        cmdStr = ['PR715',char(13)];   % Enter remote mode
     case 'measure'
         cmdStr = ['M5',char(13)];      % Measure an SPD
         disp('Measuring')
