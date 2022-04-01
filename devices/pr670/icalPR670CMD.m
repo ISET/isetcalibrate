@@ -11,14 +11,14 @@ function val = icalPR670CMD(pr,prCMD,varargin)
 %
 % Inputs
 %   pr:  The serial port returned by icalPR670Init;
-%   prCMD:  A string indicating what you want
+%   prCMD:  The command you want to execute
 %
 %      local - Set PR670 for local control
 %      remote - Set PR670 for control from computer
 %      measure - Get a SPD data set
-%      read    - Read a measured data set
+%      measure read spd
+%      read spd   - Read a measured data set
 %      clear errors - 
-%      measure read - NYI
 %
 % Optional keyval
 %      Aperture size, time, stuff like that
@@ -34,12 +34,14 @@ function val = icalPR670CMD(pr,prCMD,varargin)
    pr = icalPR670Init;
    icalPR670CMD(pr,'local');
    icalPR670CMD(pr,'remote');
+   icalPR670CMD(pr,'clear read buffer')
    icalPR670CMD(pr,'measure');
    val = icalPR670CMD(pr,'read');
    ieNewGraphWin; plot(val.wave,val.energy);
 %}
 %{
-    val = icalPR670CMD(pr,'measure read');
+   val = icalPR670CMD(pr,'measure read spd');
+   ieNewGraphWin; plot(val.wave,val.energy);
 %}
 %{
    icalPR670CMD(pr,'clear error');
@@ -53,44 +55,28 @@ function val = icalPR670CMD(pr,prCMD,varargin)
   icalPR670CMD(pr,'exposure time');
 %}
 
-%%
-if notDefined('pr') || ~isa(pr,'internal.Serialport')
-    error('Modern serial port required');
-end
+%% Parse inputs
 
-prCMD = ieParamFormat(prCMD);
+prCMD    = ieParamFormat(prCMD);
+varargin = ieParamFormat(varargin);
+
+p = inputParser;
+p.addRequired('pr',@(x)(isa(pr,'internal.Serialport')));
+p.addRequired('prCMD',@ischar);
+p.addParameter('timeout',25,@isinteger);
+
+p.parse(pr,prCMD,varargin{:});
+
+timeout = p.Results.timeout;
+
+% Return default is empty
 val = '';
 
-%%
+%% Create the PR670 code command string
+   
 switch prCMD
-    case 'local'
-        cmdStr = ['Q',char(13)];       % Quit remote mode
-    case 'remote'
-        cmdStr = ['PHOTO',char(13)];   % Enter remote mode
-    case 'measure'
-        cmdStr = ['M5',char(13)];      % Measure an SPD
-        disp('Measuring')
-
-    case 'aperturereallytiny'
-        % 0.124
-        cmdStr = ['SF3',char(13)];
-    case 'aperturetiny'
-        % 0.25 deg
-        cmdStr = ['SF2',char(13)];
-    case 'aperturesmall'
-        % 0.5 deg
-        cmdStr = ['SF1',char(13)];
-    case 'aperturelarge'
-        % 1.0 deg
-        cmdStr = ['SF0',char(13)];
-        
-    case 'exposuretime'
-        % Set to 100 ms
-        cmdStr = ['SE0100',char(13)];
-    case 'read'
-        % Tell the PR670 what data we want to download
-        icalPR670CMD(pr,'download');
-        
+    
+    case 'readspd'        
         % Loop to read all the lines.  This 202 should probably be figured
         % out from the wave settings.  Once we figure out the wave
         % settings.  We think it might always be 380 to 780 in 2nm steps.
@@ -120,33 +106,45 @@ switch prCMD
         val.wave   = wave; 
         val.energy = energy;
         return;
-    case 'measureread'
-        icalPR670CMD(pr,'measure');
-        val = icalPR670CMD(pr,'read');
-    case {'clearerror','clearerrors'}
-        cmdStr = ['C',char(13)]; 
-    case 'download'
-        cmdStr = ['D5',char(13)];
+        
+    case 'measurereadspd'
+        %
+        icalPR670CMD(pr,'clear read buffer');
+        icalPR670write(pr,icalPR670Code('measure'));
+        mx = timeout;   %
+        tic;
+        while toc < mx && pr.NumBytesAvailable == 0
+            % Wait up to 15 sec for num bytes to be positive
+        end
+        if pr.NumBytesAvailable > 0
+            val = icalPR670CMD(pr,'read spd');
+        else
+            disp('Time out on the read');
+        end
+        return;
+        
     case 'clearreadbuffer'
         tout = pr.Timeout;
         pr.Timeout = 0.5;
         thisLine = pr.readline;
+        warning('off');
         while ~isempty(thisLine)
             thisLine = pr.readline;
         end
+        warning('on');
         pr.Timeout = tout;
         return;
+        
     otherwise
-        error('Unknown pr command %s\n',prCMD)
+        % Just write the string to the device
+        cmdStr = icalPR670Code(prCMD);
+        if ~isempty(cmdStr)
+            icalPR670write(pr,cmdStr);
+        else
+            error('Unknown command %s\n',prCMD);
+        end
+        
 end
 
-%% Push the command to the PR670
-disp(cmdStr)
-for i = 1:length(cmdStr)
-    pr.write(upper(cmdStr(i)),'char');
-    pause(0.05)
-end
-
-val = pr.readline;
 
 end
