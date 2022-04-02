@@ -34,10 +34,12 @@ function val = icalPR670CMD(pr,prCMD,varargin)
    pr = icalPR670Init;
    icalPR670CMD(pr,'local');
    icalPR670CMD(pr,'remote');
-   icalPR670CMD(pr,'clear read buffer')
-   icalPR670CMD(pr,'measure');
-   val = icalPR670CMD(pr,'read');
+   val = icalPR670CMD(pr,'measure read spd');
    ieNewGraphWin; plot(val.wave,val.energy);
+
+%}
+%{
+    val = icalPR670CMD(pr,'measure read XYZ');
 %}
 %{
    val = icalPR670CMD(pr,'measure read spd');
@@ -52,6 +54,7 @@ function val = icalPR670CMD(pr,prCMD,varargin)
 %{
   icalPR670CMD(pr,'aperture large');
   icalPR670CMD(pr,'aperture small');
+  icalPR670CMD(pr,'aperture really tiny');
   icalPR670CMD(pr,'exposure time');
 %}
 
@@ -67,8 +70,6 @@ p.addParameter('timeout',25,@isinteger);
 
 p.parse(pr,prCMD,varargin{:});
 
-timeout = p.Results.timeout;
-
 % Return default is empty
 val = '';
 
@@ -76,58 +77,55 @@ val = '';
    
 switch prCMD
     
-    case 'readspd'        
-        % Loop to read all the lines.  This 202 should probably be figured
-        % out from the wave settings.  Once we figure out the wave
-        % settings.  We think it might always be 380 to 780 in 2nm steps.
-        
-        str = '';
+    case 'read'        
+        % Loop to read all the lines.
+        val = '';
         disp('Reading');
-        for ii=1:202
+        while pr.NumBytesAvailable > 0
             thisLine = pr.readline;
             pause(0.005);
-            if isempty(thisLine)
-                break;
-            else
-                str = [str; thisLine]; %#ok<AGROW>
+            if isempty(thisLine), break;
+            else,  val = [val; thisLine]; %#ok<AGROW>
             end
         end
         disp('Finished reading');
-        
-        % Convert the string to numbers
-        nVals = numel(str) - 2;
-        wave = zeros(nVals,1); energy = wave;
-        for ii=3:numel(str)
-            c = split(str(ii),',');
-            wave(ii-2)   = str2double(c{1});
-            energy(ii-2) = str2double(c{2});
-        end
-        val.str    = str;
-        val.wave   = wave; 
-        val.energy = energy;
         return;
         
     case 'measurereadspd'
         %
         icalPR670CMD(pr,'clear read buffer');
-        icalPR670write(pr,icalPR670Code('measure'));
-        mx = timeout;   %
-        tic;
-        while toc < mx && pr.NumBytesAvailable == 0
-            % Wait up to 15 sec for num bytes to be positive
+        icalPR670write(pr,icalPR670Code('measure spd'));
+        if icalPR670WaitForData(pr)
+            str = icalPR670CMD(pr,'read');
         end
-        if pr.NumBytesAvailable > 0
-            val = icalPR670CMD(pr,'read spd');
-        else
-            disp('Time out on the read');
+        val.str = str;
+        
+        % Convert the SPD string return to numbers
+        nVals = numel(str) - 2;
+        val.wave = zeros(nVals,1); val.energy = val.wave;
+        for ii=3:numel(str)
+            c = split(str(ii),',');
+            val.wave(ii-2)   = str2double(c{1});
+            val.energy(ii-2) = str2double(c{2});
         end
         return;
         
+    case 'measurereadxyz'
+        nLines = 2;
+        icalPR670CMD(pr,'clear read buffer');
+        icalPR670write(pr,icalPR670Code('measure XYZ'));
+        if icalPR670WaitForData(pr)
+            val = icalPR670CMD(pr,'read','nlines',nLines);
+        end
+        c = split(val{2},',');
+        val = [str2double(c(3)),str2double(c(4)),str2double(c(5))];
+        return;
+
     case 'clearreadbuffer'
         tout = pr.Timeout;
         pr.Timeout = 0.5;
-        thisLine = pr.readline;
         warning('off');
+        thisLine = pr.readline;
         while ~isempty(thisLine)
             thisLine = pr.readline;
         end
