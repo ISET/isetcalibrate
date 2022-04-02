@@ -97,9 +97,11 @@ switch prCMD
         icalPR670write(pr,icalPR670Code('measure spd'));
         if icalPR670WaitForData(pr)
             str = icalPR670CMD(pr,'read');
-        end
-        val.str = str;
-        
+            val.str = str;
+        else
+            disp('Measurement timed out.');
+            return;
+        end        
         % Convert the SPD string return to numbers
         nVals = numel(str) - 2;
         val.wave = zeros(nVals,1); val.energy = val.wave;
