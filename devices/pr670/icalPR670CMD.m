@@ -80,28 +80,33 @@ switch prCMD
     case 'read'        
         % Loop to read all the lines.
         val = '';
-        disp('Reading');
         while pr.NumBytesAvailable > 0
             thisLine = pr.readline;
-            pause(0.005);
+            pause(0.010);
             if isempty(thisLine), break;
             else,  val = [val; thisLine]; %#ok<AGROW>
             end
         end
-        disp('Finished reading');
         return;
         
     case 'measurereadspd'
         %
         icalPR670CMD(pr,'clear read buffer');
+        pause(0.1);
         icalPR670write(pr,icalPR670Code('measure spd'));
+        icalPR670CMD(pr,'clear read buffer');
+
+        disp('Waiting for data');
         if icalPR670WaitForData(pr)
+            pause(0.1);  % Let the instrument finish putting the data in the buffer.
             str = icalPR670CMD(pr,'read');
             val.str = str;
         else
             disp('Measurement timed out.');
             return;
         end        
+        disp('Done reading');
+        
         % Convert the SPD string return to numbers
         nVals = numel(str) - 2;
         val.wave = zeros(nVals,1); val.energy = val.wave;
