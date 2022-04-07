@@ -148,7 +148,6 @@ switch prCMD
         else
             error('Unknown command %s\n',prCMD);
         end
-        
 end
 
 

@@ -37,7 +37,7 @@ switch prCMD
         
         % Set the aperture size
     case 'aperturereallytiny'
-        % 0.124
+        % 0.125
         cmdStr = ['SF3',char(13)];
     case 'aperturetiny'
         % Does not work on our system
