@@ -141,7 +141,8 @@ switch prCMD
         return;
         
     otherwise
-        % Just write the string to the device
+        % Try writing the CMD string to the device
+        % The device should be in 'remote' mode.
         cmdStr = icalPR670Code(prCMD);
         if ~isempty(cmdStr)
             icalPR670write(pr,cmdStr);
