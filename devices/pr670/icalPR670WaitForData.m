@@ -15,6 +15,8 @@ while toc < mx
     if pr.NumBytesAvailable > 0
         val = true;
         return;
+    else
+        pause(0.050);
     end
 end
 
