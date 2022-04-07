@@ -1,3 +1,5 @@
+% Deprecated for icalPR670 modern code with serialport.
+
 clear all;
 photometerCOM = 'COM5';           % Select the correct COM port number for the photometer
 

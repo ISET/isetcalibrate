@@ -1,5 +1,7 @@
 %% s_iCalMeasureWithPause
 %
+% Old Psychtoolbox methods.  Deprecated for icalPR670 modern code.
+%
 % Remotely control the PR670 photospectrometer to measure spectral
 % reflection for OralEye project. Edit the code so that the result can be
 % saved with the same format as ieSaveSpectralFiles do.
