@@ -111,10 +111,10 @@ switch prCMD
     case 'measurereadspd'
         icalPR715CMD(pr,'clear read buffer');
         pause(0.1);
-        
+        tic;
         icalPR715write(pr,icalPR715Code('measure spd'));
         
-        % Clear the returned message right 
+        % Clear the returned message seems not to be necessary. 
         % icalPR715CMD(pr,'clear read buffer');
         
         disp('Waiting for data');
@@ -127,6 +127,7 @@ switch prCMD
             return;
         end
         disp('Done reading');
+        toc
         
         % Convert the SPD string return to numbers
         nVals = numel(str) - 2;
@@ -139,15 +140,20 @@ switch prCMD
         return;
         
     case 'clearreadbuffer'
+        % Read until no more data are available
+        if pr.NumBytesAvailable == 0, return; end
+        
+        % Some data are there.
+        warning('off');
         tout = pr.Timeout;
         pr.Timeout = 0.5;
-        warning('off');
         thisLine = pr.readline;
         while ~isempty(thisLine)
             thisLine = pr.readline;
         end
-        warning('on');
         pr.Timeout = tout;
+        warning('on');
+        
         return;
         
     otherwise
