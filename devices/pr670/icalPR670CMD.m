@@ -58,6 +58,7 @@ function val = icalPR670CMD(pr,prCMD,varargin)
   icalPR670CMD(pr,'exposure time');
 %}
 
+
 %% Parse inputs
 
 prCMD    = ieParamFormat(prCMD);

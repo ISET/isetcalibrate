@@ -1,8 +1,8 @@
-function val = icalPR670CMD(pr,prCMD)
+function val = icalPR715CMD(pr,prCMD)
 % Send a command to the PR 670.
 %
 %  Synopsis
-%      val = icalPR670CMD(pr,prCMD)
+%      val = icalPR715CMD(pr,prCMD)
 %
 % Description:
 %   Interacting with the 670, based on the modern serialport Matlab
@@ -13,8 +13,8 @@ function val = icalPR670CMD(pr,prCMD)
 %   pr:  The serial port returned by icalPR670Init;
 %   prCMD:  A string indicating what you want
 %
-%      local - Set PR670 for local control
-%      remote - Set PR670 for control from computer
+%      local - Set PR715 for local control
+%      remote - Set PR715 for control from computer
 %      measure - Get a SPD data set
 %      read    - Read a measured data set
 %      clear errors - 
@@ -28,26 +28,59 @@ function val = icalPR670CMD(pr,prCMD)
 
 % Examples:
 %{
-   pr = icalPR670Init;
-   icalPR670CMD(pr,'local');
-   icalPR670CMD(pr,'remote');
-   icalPR670CMD(pr,'measure');
-   val = icalPR670CMD(pr,'read');
+   pr = icalPR715Init;
+%}
+%{
+   icalPR715CMD(pr,'remote');
+   icalPR715CMD(pr,'backlight full');
+   pause(0.5);
+   icalPR715CMD(pr,'backlight off');
+   pause(0.5);
+%}
+%{
+    val = icalPR715CMD(pr,'measure read spd');
+    ieNewGraphWin;
+    plot(val.wave,val.energy');
+    grid on; xlabel('Wave (nm)'); ylabel('Energy');
+%}
+%{
+   icalPR715CMD(pr,'local');
+%}
+%{
+%  See how many apertures there are. A-49 in the Appendix
+%  Number of accessories and number of apertures.
+   icalPR715CMD(pr,'remote');
+   cmdStr = ['D112',char(13)]
+   for i = 1:length(cmdStr)
+     pr.write(upper(cmdStr(i)),'char');
+     pause(0.05)
+   end
+   val = icalPR715CMD(pr,'read')
+%}
+%{
+   icalPR715CMD(pr,'remote');
+   % 1 and 4 seem to change the aperture.  Not 0  2 or  3 
+   cmdStr = ['S,,,4',char(13)];
+   for i = 1:length(cmdStr)
+     pr.write(upper(cmdStr(i)),'char');
+     pause(0.05)
+   end
+%}
+%{
+   icalPR715CMD(pr,'measure');
+   val = icalPR715CMD(pr,'read');
    ieNewGraphWin; plot(val.wave,val.energy);
 %}
 %{
-    val = icalPR670CMD(pr,'measure read');
+   icalPR715CMD(pr,'clear error');
 %}
 %{
-   icalPR670CMD(pr,'clear error');
+    icalPR715CMD(pr,'clear read buffer')
 %}
 %{
- icalPR670CMD(pr,'clear read buffer')
-%}
-%{
-  icalPR670CMD(pr,'aperture large');
-  icalPR670CMD(pr,'aperture small');
-  icalPR670CMD(pr,'exposure time');
+  icalPR715CMD(pr,'aperture large');
+  icalPR715CMD(pr,'aperture small');
+  icalPR715CMD(pr,'exposure time');
 %}
 
 %%
@@ -60,16 +93,18 @@ val = '';
 
 %%
 switch prCMD
-    case 'backlight'
+    case 'backlightfull'
         % We need a few of these with the number changed
         cmdStr = ['B3',char(13)];
+    case 'backlightoff'
+        cmdStr = ['B0',char(13)];
     case 'local'
         % This worked
         cmdStr = ['Q',char(13)];       % Quit remote mode
     case 'remote'
         % This worked
         cmdStr = ['PR715',char(13)];   % Enter remote mode
-    case 'measure'
+    case 'measurespd'
         cmdStr = ['M5',char(13)];      % Measure an SPD
         disp('Measuring')
 
@@ -90,41 +125,42 @@ switch prCMD
         % Set to 100 ms
         cmdStr = ['SE0100',char(13)];
     case 'read'
-        % Tell the PR670 what data we want to download
-        icalPR670CMD(pr,'download');
-        
-        % Loop to read all the lines.  This 202 should probably be figured
-        % out from the wave settings.  Once we figure out the wave
-        % settings.  We think it might always be 380 to 780 in 2nm steps.
-        
-        str = '';
-        disp('Reading');
-        for ii=1:202
+         % Loop to read all the lines.
+        val = '';
+        while pr.NumBytesAvailable > 0
             thisLine = pr.readline;
-            pause(0.005);
-            if isempty(thisLine)
-                break;
-            else
-                str = [str; thisLine]; %#ok<AGROW>
+            pause(0.010);
+            if isempty(thisLine), break;
+            else,  val = [val; thisLine]; %#ok<AGROW>
             end
         end
-        disp('Finished reading');
+        return;
+    case 'measurereadspd'
+        icalPR670CMD(pr,'clear read buffer');
+        pause(0.1);
+        icalPR670write(pr,icalPR670Code('measure spd'));
+        icalPR670CMD(pr,'clear read buffer');
         
-        % Convert the string to numbers
+        disp('Waiting for data');
+        if icalPR670WaitForData(pr)
+            pause(0.1);  % Let the instrument finish putting the data in the buffer.
+            str = icalPR670CMD(pr,'read');
+            val.str = str;
+        else
+            disp('Measurement timed out.');
+            return;
+        end
+        disp('Done reading');
+        
+        % Convert the SPD string return to numbers
         nVals = numel(str) - 2;
-        wave = zeros(nVals,1); energy = wave;
+        val.wave = zeros(nVals,1); val.energy = val.wave;
         for ii=3:numel(str)
             c = split(str(ii),',');
-            wave(ii-2)   = str2double(c{1});
-            energy(ii-2) = str2double(c{2});
+            val.wave(ii-2)   = str2double(c{1});
+            val.energy(ii-2) = str2double(c{2});
         end
-        val.str    = str;
-        val.wave   = wave; 
-        val.energy = energy;
         return;
-    case 'measureread'
-        icalPR670CMD(pr,'measure');
-        val = icalPR670CMD(pr,'read');
     case {'clearerror','clearerrors'}
         cmdStr = ['C',char(13)]; 
     case 'download'
@@ -142,13 +178,13 @@ switch prCMD
         error('Unknown pr command %s\n',prCMD)
 end
 
-%% Push the command to the PR670
+%% Write the string to the PR6715
 disp(cmdStr)
 for i = 1:length(cmdStr)
     pr.write(upper(cmdStr(i)),'char');
     pause(0.05)
 end
 
-val = pr.readline;
+% val = pr.readline;
 
 end
