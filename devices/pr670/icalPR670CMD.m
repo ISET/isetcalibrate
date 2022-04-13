@@ -97,6 +97,7 @@ switch prCMD
         icalPR670write(pr,icalPR670Code('measure spd'));
         icalPR670CMD(pr,'clear read buffer');
 
+        tic;
         disp('Waiting for data');
         if icalPR670WaitForData(pr)
             pause(0.1);  % Let the instrument finish putting the data in the buffer.
@@ -107,6 +108,7 @@ switch prCMD
             return;
         end        
         disp('Done reading');
+        toc
         
         % Convert the SPD string return to numbers
         nVals = numel(str) - 2;
